@@ -133,7 +133,7 @@ python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？" --
 | [docs/interface.md](docs/interface.md) | 页面：地图、时间轴、面板、视觉语言 |
 | [docs/roster.md](docs/roster.md) | 名录：2578 人、13 个文化圈、来源与偏向 |
 | [docs/limitations.md](docs/limitations.md) | 已知的取舍，以及这一页最该被质疑的地方 |
-| [docs/slides.html](docs/slides.html) | 路演用的六页幻灯：一个 HTML，← → 翻页，也能直接打印成 PDF |
+| [docs/slides.html](docs/slides.html) | 路演用的七页幻灯：一个 HTML，← → 翻页，也能直接打印成 PDF |
 
 ## 已知限制
 
@@ -146,10 +146,22 @@ python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？" --
 
 MIT，见 [LICENSE](LICENSE)。
 
-幻灯最后那页的太阳照片**不在 MIT 授权范围内**，它有自己的授权，署名必须跟着它走。
+幻灯里有**两张照片不在 MIT 授权范围内**，它们有自己的授权，署名必须跟着它们走。
+
+**第 6 页 · 太阳与行星**
 
 - 文件：[Planets and sun size comparison.jpg](https://commons.wikimedia.org/wiki/File:Planets_and_sun_size_comparison.jpg)，来自 Wikimedia Commons
 - 作者：**Lsmpascal**（自己的作品）
 - 授权：[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)，署名必须保留；改动后的版本必须以同一授权发布
 
 这张照片在 [WeatherSTEM 的课程页](https://learn.weatherstem.com/modules/learn/lessons/127/06.html) 上也能找到，而那一页自己把它标注为来自维基百科。
+
+**第 7 页 · 恒星大小对比（参宿四 / 心宿二）**
+
+- **原始出处未确认。** 对照过 Wikimedia Commons 的
+  [Star size comparisons](https://commons.wikimedia.org/wiki/Category:Star_size_comparisons)
+  分类里最接近的十几张（Star-sizes、Comparison of planets and stars、Well known stars 2、
+  Large Stars Comparison、Antares 系列），没有一张是它，也不是它们的裁剪。
+- 所以幻灯上写的是「网络流传 · 原始出处待考」，而不是编一个署名。
+- **对外路演前请替换成有明确授权的图**——上面那个分类里有可直接用的替代品，
+  换掉时记得同时改幻灯上的署名行。
