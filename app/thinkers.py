@@ -414,7 +414,7 @@ SCALE_PER_REQUEST = 255
 # ends of history agreed to r=0.995, max |delta| 0.050; adding them to a batch
 # moved the other 243 by mean 0.008, max 0.030. So they calibrate without
 # disturbing.
-ANCHOR_ZH = ("老子", "释迦牟尼", "鲁迅", "马克思", "柏拉图", "孔子",
+ANCHOR_ZH = ("老子", "释迦牟尼", "尼采", "马克思", "柏拉图", "孔子",
              "苏格拉底", "达尔文", "刘慈欣", "康德", "亚里士多德", "马斯克")
 
 
