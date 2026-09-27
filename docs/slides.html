@@ -54,7 +54,7 @@ svg{display:block}
 .cover .display{position:absolute;left:0;right:0;top:44%;transform:translateY(-50%);
   text-align:center;font-size:118px;z-index:1}
 
-/* ---------- 2 and 3 ---------- */
+/* ---------- 3 and 4 ---------- */
 .body{padding:34px 46px 0}
 .h1{font-size:56px;line-height:.98}
 .cap{font-size:13.5px;line-height:1.7}
@@ -69,9 +69,13 @@ svg{display:block}
 .note{padding:11px 14px;border-left:3px solid var(--ink);background:rgba(222,222,222,.5)}
 .note .k{font:10px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;opacity:.6}
 .note .v{font:13px/1.55 var(--mono)}
-.epi{position:absolute;left:46px;right:46px;bottom:50px;border-top:1px dotted rgba(30,30,30,.4);
-  padding-top:10px;font:12px/1.6 var(--mono);color:var(--dim);
-  display:flex;justify-content:space-between;gap:24px}
+.quote{position:absolute;left:96px;right:96px;top:70px;bottom:70px;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.quote p{margin:0}
+.quote .zh{font-family:var(--display);font-weight:800;letter-spacing:-.035em;font-size:54px;line-height:1.34}
+.quote .en{margin-top:34px;font:15px/1.85 var(--mono);color:rgba(30,30,30,.74)}
+.quote .who{margin-top:32px;padding-top:15px;border-top:1px solid rgba(30,30,30,.38);
+  font:11px/1.6 var(--mono);letter-spacing:.1em;color:var(--dim)}
 .stat{display:flex;align-items:baseline;gap:13px;margin-top:16px}
 .stat .n{font-family:var(--display);font-weight:800;letter-spacing:-.04em;font-size:46px;line-height:1}
 .stat .t{font:11px/1.5 var(--mono);letter-spacing:.06em;opacity:.72}
@@ -112,9 +116,22 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
     <h1 class="display">Ask Great&nbsp;Thinkers</h1>
   </section>
 
-  <!-- 2 · the human half -->
+  <!-- 2 · the epigraph, on a page of its own. The two halves of the argument
+       come after it; this one is only here so the sentence can be read slowly. -->
   <section class="slide">
-    <div class="bar"><span>上篇 · 让全人类的思想家回答你</span><span class="r">2 / 3</span></div>
+    <div class="sky"></div>
+    <div class="bar"><span>引子</span><span class="r">2 / 4</span></div>
+    <div class="quote">
+      <p class="zh">“我写那些艰难的事情，<br>因为我想知道自己并不孤独，<br>也想让你知道，你也并不孤独。”</p>
+      <p class="en">“I write about hard things because I want to know I am not alone in this<br>
+        and I want you to know you are not alone in this.”</p>
+      <p class="who">—— 美国作家 Brian Doyle</p>
+    </div>
+  </section>
+
+  <!-- 3 · the human half -->
+  <section class="slide">
+    <div class="bar"><span>上篇 · 让全人类的思想家回答你</span><span class="r">3 / 4</span></div>
     <div class="body">
       <h2 class="display h1">让全人类的思想家回答你</h2>
       <div class="sub muted">
@@ -153,17 +170,11 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
         <span class="s">一次提问 → 2578 个位置</span>
       </div>
     </div>
-
-    <div class="epi">
-      <span>“I write about hard things because I want to know I am not alone in this
-        and I want you to know you are not alone in this.”</span>
-      <span style="white-space:nowrap">—— 美国作家 Brian Doyle</span>
-    </div>
   </section>
 
-  <!-- 3 · the technical half -->
+  <!-- 4 · the technical half -->
   <section class="slide">
-    <div class="bar"><span>下篇 · 基于 Jev-Like，做钻井平台！</span><span class="r">3 / 3</span></div>
+    <div class="bar"><span>下篇 · 基于 Jev-Like，做钻井平台！</span><span class="r">4 / 4</span></div>
     <div class="body">
       <h2 class="display h1">基于 Jev-Like，做钻井平台！</h2>
 
@@ -218,7 +229,7 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
 </div>
 
 <div class="hud" id="hud">
-  <i class="on"></i><i></i><i></i>
+  <i class="on"></i><i></i><i></i><i></i>
   <span class="hint">← → 翻页 · F 全屏 · B 黑屏</span>
 </div>
 
