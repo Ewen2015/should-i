@@ -2469,6 +2469,20 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   // any order, and the animation starts when all three are done.
 
 
+  /* The ask window's title bar has said 按 ⌘/Ctrl + Enter 提交 from the start,
+     and nothing was listening: the shortcut was a caption, not a control. A
+     promise printed in the chrome is the worst kind of broken, because the
+     reader believes it and then blames themselves for the silence.
+
+     It dispatches the button's own click instead of calling tkStart(), so the
+     two cannot drift apart later -- whatever the button comes to mean, a
+     modifier-Enter means that too. */
+  $("q").onkeydown = function(e){
+    if (e.isComposing) return;                    /* an IME owns Enter mid-composition */
+    if (!(e.metaKey || e.ctrlKey) || e.key !== "Enter") return;
+    e.preventDefault();                           /* otherwise a newline lands in the box */
+    $("go-thinkers").click();
+  };
   $("go-thinkers").onclick = tkStart;
   $("tk-back").onclick = function(){
     tkAbortScale(); tkStop(); TK.playing = false; show("ask");
