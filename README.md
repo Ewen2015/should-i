@@ -93,7 +93,7 @@ scripts/             一次性工具，不参与运行
   gen_pinyin.py        从 app/thinkers_data.py 重建 app/thinkers_pinyin.py
   smoke_test.py        对着一个跑起来的服务做端到端验证
 tests/               纯逻辑测试：无网络、无 key、无浏览器
-docs/                设计笔记、架构、页面、名录、已知取舍
+docs/                设计笔记、架构、页面、名录、已知取舍、产品哲学、路演幻灯
 ```
 
 运行时会多出两个文件——答案缓存和 key 文件——都落在 `app/` 里，也都在
@@ -123,6 +123,7 @@ python3 scripts/smoke_test.py "人类要成为一个星际文明吗？" --run   
 | [docs/interface.md](docs/interface.md) | 页面：地图、时间轴、面板、视觉语言 |
 | [docs/roster.md](docs/roster.md) | 名录：2578 人、13 个文化圈、来源与偏向 |
 | [docs/limitations.md](docs/limitations.md) | 已知的取舍，以及这一页最该被质疑的地方 |
+| [docs/slides.html](docs/slides.html) | 路演用的三页幻灯：一个 HTML，← → 翻页，也能直接打印成 PDF |
 
 ## 已知限制
 
