@@ -1,0 +1,2283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask Great Thinkers</title>
+<style>
+:root{
+  --paper:#FEFEFE;
+  --ink:#1E1E1E;
+  --pink:#F386A1;
+  --magenta:#D45BB6;
+  --panel:#DEDEDE;
+  --panel-2:#C4C4C4;
+  --dim:rgba(30,30,30,.62);
+  --mono:ui-monospace,"JetBrains Mono","Fragment Mono",SFMono-Regular,Menlo,"DejaVu Sans Mono",monospace;
+  --display:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Inter",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font:13px/1.65 var(--mono);
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+::selection{background:var(--ink);color:var(--paper)}
+
+/* ---------- layout ---------- */
+.wrap{max-width:860px;margin:0 auto;padding:0 22px 90px;position:relative;z-index:2}
+
+/* One screen for the landing view: the sky is a fixed band, the stage takes the
+   rest, and the ask view grows to fill it without ever scrolling. `flex:1 0 auto`
+   on the section is the trick: it fills leftover space, but refuses to shrink, so
+   a short window degrades into a normal scroll instead of clipping anything. */
+body.app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.sky{flex:none;height:clamp(92px,13vh,142px);min-height:0}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;overflow:auto}
+.stage-inner{flex:1 0 auto;display:flex;flex-direction:column;width:100%;padding:0 22px}
+section.view{flex:0 0 auto;padding-bottom:90px}
+#view-ask{flex:1 0 auto;display:flex;flex-direction:column;padding-bottom:clamp(6px,1.2vh,16px);
+  gap:clamp(10px,1.5vh,18px)}
+/* Two auto margins split whatever height is left over: the header ends up at the
+   top, the input sits in the middle, the explainer and footer land on the bottom
+   edge. The textarea itself is capped, so a tall window never turns into one
+   enormous empty field. */
+#view-ask .askwin{margin-top:auto}
+#view-ask #ask-steps{margin-top:auto}
+#view-ask h1.display{font-size:clamp(40px,6.6vw,86px);line-height:.94;flex:none}
+#view-ask .lead{margin:0}
+#view-ask .askwin{display:flex;flex-direction:column;flex:0 1 auto;min-height:0}
+#view-ask .askwin .body{display:flex;flex-direction:column;flex:0 1 auto;min-height:0;gap:12px;padding:16px}
+#view-ask #q{flex:0 1 auto;height:clamp(112px,28vh,300px);min-height:58px}
+#view-ask footer{padding:0;flex:none}
+.steps-row{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;font-size:11.5px}
+/* The product name gets its own line: inline, the description wrapped wherever
+   the column happened to run out ("判断 + 每个 / 答案改变了什么"), which reads
+   like a mistake. Then each clause is unbreakable and the only place a line can
+   end is the arrow between them -- a break there looks deliberate. */
+.steps-row b{display:block;opacity:.5;margin:0 0 4px}
+.steps-row .nw{white-space:nowrap}
+@media (max-height:760px){
+  .sky{height:82px}
+  #view-ask #q{height:clamp(80px,14vh,132px)}
+  #view-ask h1.display{font-size:clamp(34px,5.4vw,58px)}
+  #view-ask{gap:9px}
+}
+@media (max-width:640px){
+  .steps-row{grid-template-columns:1fr;gap:6px}
+  /* The panel now describes two paths instead of one row of three steps, so on
+     a phone it is taller. Take it back from the textarea, which was sized for a
+     wide window: 28vh on a 780px-tall phone is a 218px field on a 420px screen. */
+  #view-ask #q{height:clamp(96px,20vh,170px)}
+}
+
+/* ---------- the dithered pink sky ---------- */
+.sky{
+  position:relative; z-index:0; overflow:hidden;
+  background:
+    radial-gradient(120% 85% at 18% -10%, #ffe3ec 0%, rgba(255,227,236,0) 58%),
+    radial-gradient(95% 70% at 88% 8%, #ffffff 0%, rgba(255,255,255,0) 52%),
+    linear-gradient(180deg,#f9b2c8 0%, #F386A1 40%, #f3bad0 68%, #fdeef4 88%, var(--paper) 100%);
+}
+.sky::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.30;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='2' height='2' fill='%23ffffff' fill-opacity='.75'/%3E%3Crect x='2' y='2' width='2' height='2' fill='%23ffffff' fill-opacity='.75'/%3E%3C/svg%3E");
+  background-size:4px 4px;
+}
+.sky::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.09;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3Crect width='1' height='1' fill='%231E1E1E'/%3E%3C/svg%3E");
+  background-size:2px 2px;
+}
+.sky > *{position:relative;z-index:1}
+
+/* ---------- windows ---------- */
+.win{border:1px solid var(--ink);background:var(--panel);box-shadow:5px 5px 0 var(--ink)}
+.win.paper{background:var(--paper)}
+.bar{
+  background:var(--ink);color:var(--paper);
+  font:10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  padding:6px 9px;display:flex;justify-content:space-between;gap:12px;
+}
+.bar .r{opacity:.7}
+.body{padding:20px}
+.body.tight{padding:14px}
+
+/* ---------- type ---------- */
+.display{
+  font-family:var(--display);font-weight:800;letter-spacing:-.045em;line-height:.86;
+  margin:0;
+}
+h1.display{font-size:clamp(58px,15vw,148px)}
+.lead{display:flex;align-items:baseline;gap:0;font:11px/1.6 var(--mono);letter-spacing:.06em}
+.lead .f{flex:1;border-bottom:1px dotted currentColor;opacity:.5;margin:0 9px;transform:translateY(-4px)}
+.lbl{font:10px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+.muted{opacity:.62}
+.small{font-size:11.5px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:9px;justify-content:center;
+  border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+  padding:11px 20px;font:11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  box-shadow:3px 3px 0 rgba(30,30,30,.28);
+}
+.btn:hover{background:var(--paper);color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
+.btn.ghost{background:var(--paper);color:var(--ink);box-shadow:3px 3px 0 rgba(30,30,30,.28)}
+.btn.ghost:hover{background:var(--ink);color:var(--paper)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+
+/* ---------- input ---------- */
+textarea{
+  width:100%;min-height:104px;resize:vertical;background:var(--paper);color:var(--ink);
+  border:1px solid var(--ink);padding:13px;font:13px/1.7 var(--mono);outline:none;
+}
+textarea:focus{box-shadow:inset 0 0 0 1px var(--ink)}
+textarea::placeholder{color:rgba(30,30,30,.38)}
+
+/* ---------- settings ---------- */
+.field{margin-top:18px}
+.field label{display:block;font:10px/1.5 var(--mono);letter-spacing:.14em;
+             text-transform:uppercase;opacity:.6;margin-bottom:7px}
+.field input{
+  width:100%;background:var(--paper);color:var(--ink);border:1px solid var(--ink);
+  padding:11px 13px;font:13px/1.5 var(--mono);outline:none;letter-spacing:0;
+}
+.field input:focus{box-shadow:inset 0 0 0 1px var(--ink)}
+.state{margin-top:7px;font:11px/1.6 var(--mono);opacity:.72}
+.state.on{opacity:1}
+.state b{font-weight:700}
+.verdict-line{
+  display:flex;gap:10px;align-items:baseline;padding:9px 0;border-top:1px solid rgba(30,30,30,.14);
+  font:11.5px/1.6 var(--mono);
+}
+.verdict-line .k{flex:none;width:78px;text-transform:uppercase;letter-spacing:.1em;font-size:10px;opacity:.6}
+.dot{display:inline-block;width:7px;height:7px;border:1px solid var(--ink);margin-right:7px}
+.dot.good{background:var(--ink)}
+.dot.bad{background:var(--pink)}
+.warn{color:#8a1d3d}
+
+/* ---------- chrome bits ---------- */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;font:11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.corner{position:absolute;bottom:0;width:14px;height:14px;border-bottom:1px solid var(--ink);border-left:1px solid var(--ink)}
+.corner.l{left:14px}.corner.r{right:14px;border-left:0;border-right:1px solid var(--ink)}
+.strip{
+  position:absolute;left:10px;top:46%;writing-mode:vertical-rl;transform:translateY(-50%);
+  font:9px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;opacity:.5;pointer-events:none;
+}
+/* ===== Ask Great Thinkers ===== */
+#view-thinkers{gap:13px}
+#view-thinkers h1.display{font-size:clamp(24px,4.2vw,46px);line-height:1;flex:none}
+/* The subject of everything below it: the map, the panel and the verdict are all
+   ABOUT this one sentence. The verdict is the page's whole payoff, and a
+   judgement whose question you have to remember is a judgement you cannot
+   question -- which is the thing this product is for. One line, ellipsised:
+   the length of what someone typed must not move the map. */
+/* The question, restated as the thing the 0-1 scale actually measures. This is
+   the one line the reader has to check before any number below it means
+   anything, so it is the second largest type on the page -- the first version
+   drew it at 11px, ellipsised, which made the most load-bearing line the
+   least visible one. */
+.tk-asked{flex:none;min-width:0;margin:1px 0 11px}
+.tk-asked .lb{display:block;font:9px/1 var(--mono);letter-spacing:.16em;
+  text-transform:uppercase;opacity:.5;margin-bottom:6px}
+.tk-asked .q{font-family:var(--display);font-weight:800;letter-spacing:-.022em;
+  font-size:clamp(19px,2.5vw,30px);line-height:1.16;color:var(--ink)}
+/* The reader's own words, kept under the restatement. A rewrite the reader
+   cannot audit is a rewrite they have to trust, and this product's whole claim
+   is that the judgement above is checkable. */
+.tk-asked .raw{font:10px/1.5 var(--mono);opacity:.5;margin-top:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-asked .raw:empty{display:none}
+/* The anchors and the numbers on screen can disagree, and that is now a state
+   the reader can reach on purpose: 确认 records a new set without paying for a
+   twelfth request, so the ruler the panel is measuring is not the one on the
+   button. Saying so is cheaper than hiding it, and the fix belongs in the same
+   sentence that explains the problem. */
+.tk-stale{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin:0 0 14px;padding:9px 11px;border:1px solid var(--magenta);
+  background:rgba(212,91,182,.06)}
+.tk-stale.hidden{display:none}
+.tk-stale span{flex:1;min-width:0;font:11px/1.55 var(--mono);color:var(--ink)}
+.tk-stale b{color:var(--magenta);font-weight:700}
+.tk-stale .btn{flex:none}
+#view-thinkers .tk-mapwrap{position:relative;background:#141414;border:1px solid var(--ink);overflow:hidden}
+#tk-map{display:block;width:100%;aspect-ratio:360/140;height:auto}
+.tk-hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;
+  align-items:baseline;gap:12px;padding:9px 11px;font:10px/1 var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(254,254,254,.72);pointer-events:none}
+.tk-hud .yr{font-size:clamp(15px,2.4vw,24px);letter-spacing:.02em;color:var(--paper)}
+.tk-hud .yr b{color:var(--pink)}
+.tk-hud .rt{text-align:right}
+.tk-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(20,20,20,.9);color:var(--paper);z-index:6;
+  font:700 clamp(52px,12vw,132px)/1 var(--mono);letter-spacing:.02em}
+.tk-count small{font:400 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;
+  display:block;margin-top:14px;color:var(--pink);text-align:center}
+/* One row per culture: the same three colours as the big bar above, so the two
+   read as one measure. Counts of people, not shares of a batch -- a person is
+   one person, and nothing here sums to 100% across cultures. */
+.tk-spec{display:flex;flex-direction:column;gap:5px;padding:2px 0}
+.tk-crow{display:flex;align-items:center;gap:8px;font:10px/1.4 var(--mono)}
+.tk-crow .cn{flex:0 0 76px;color:var(--ink);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.tk-crow .cb{flex:1;display:flex;height:9px;border:1px solid var(--ink);
+  background:var(--ink);min-width:40px}
+.tk-crow .cb i{display:block;height:100%}
+.tk-crow .cb i.y{background:var(--pink)}
+.tk-crow .cb i.m{background:#7c7c7c}
+.tk-crow .cb i.n{background:#8ce8f0}
+/* Three numbers wide. A fixed 84px wrapped "168 / 634 / 54" onto a second line
+   and made that one row twice as tall as its neighbours, so the width comes
+   from the roster instead (--tk-cc, see tkCountWidth). Monospace +
+   tabular-nums means every row's numbers are the same width per character, so
+   `ch` is an exact fit and all rows still end on the same edge. */
+.tk-crow .cc{flex:0 0 auto;width:var(--tk-cc,84px);text-align:right;color:var(--dim);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.tk-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+/* Counts again, not probabilities: every answered seat adds exactly one, so the
+   split is a real proportion and stacks across frames. */
+.tk-chips-note{font:10px/1.5 var(--mono);color:var(--dim);margin-top:9px;
+  border-top:1px dashed rgba(30,30,30,.2);padding-top:8px}
+.tk-stance{display:flex;align-items:center;gap:9px;margin-top:10px;padding-top:10px;
+  border-top:1px dashed rgba(30,30,30,.32);font:10px/1.3 var(--mono)}
+.tk-stance-lbl{color:var(--dim);white-space:nowrap}
+.tk-stance-bar{flex:1;min-width:70px;height:16px;border:1px solid var(--ink);
+  display:flex;overflow:hidden;background:var(--ink)}
+.tk-stance-bar i{display:block;height:100%}
+.tk-stance-bar i.y{background:var(--pink)}
+.tk-stance-bar i.m{background:#7c7c7c}
+.tk-stance-bar i.n{background:#8ce8f0}
+.tk-stance-txt{white-space:nowrap}
+.tk-stance-txt b{background:var(--pink);padding:1px 4px;margin-right:5px}
+.tk-chip{border:1px solid var(--ink);padding:4px 8px;font:10px/1.35 var(--mono);background:var(--paper);
+  display:inline-flex;align-items:center;gap:6px;color:var(--ink);text-decoration:none}
+.tk-chip b{background:var(--ink);color:var(--paper);padding:2px 5px}
+.tk-chip.top{background:var(--pink)}
+.tk-chip.do{background:var(--pink)}
+.tk-chip.dont{background:#8ce8f0}
+.tk-gap{font:9px/1 var(--mono);color:var(--dim);align-self:center;padding:0 3px}
+.tk-chip.top b{background:var(--ink)}
+/* The whole-roster panel. Three lists on ONE scale, which is the only reason
+   they can be read side by side -- see /api/thinkers/scale in server.py. */
+.tk-verdict{margin:0 0 14px;padding:0 0 13px;border-bottom:1px dashed rgba(30,30,30,.35)}
+.tk-verdict .ask{margin:0 0 10px;font:11px/1.6 var(--mono);color:var(--dim)}
+.tk-verdict .ask b{color:var(--ink)}
+/* The ruler is the reader's to change. The shipped twelve are a default, not a
+   fixture -- but every chunk carries all of them, so swapping them costs
+   another eleven requests. That is why this sits behind an explicit confirm
+   instead of updating live as you click. */
+.tk-picker{position:fixed;inset:0;z-index:40;background:rgba(20,20,20,.62);
+  display:flex;align-items:center;justify-content:center;padding:22px}
+.tk-picker .win{width:min(660px,100%);max-height:min(86vh,760px);display:flex;
+  flex-direction:column;margin:0}
+.tk-picker .body{gap:11px;min-height:0}
+.tk-pick-row{display:flex;gap:9px;align-items:center}
+.tk-pick-row input{flex:1;min-width:0;font:11px/1.4 var(--mono);padding:8px 10px;
+  border:1px solid var(--ink);background:var(--paper);color:var(--ink)}
+.tk-pick-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:22px;align-items:flex-start}
+.tk-pick-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ink);
+  background:var(--pink);padding:3px 4px 3px 8px;font:10px/1.3 var(--mono)}
+.tk-pick-chip button{border:0;background:none;font:11px/1 var(--mono);cursor:pointer;
+  color:var(--ink);padding:1px 3px}
+.tk-pick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:1px;
+  background:rgba(30,30,30,.16);border:1px solid rgba(30,30,30,.16);max-height:250px;
+  overflow:auto;flex:none}
+.tk-pick-list button{text-align:left;font:10px/1.35 var(--mono);padding:6px 8px;border:0;
+  background:var(--paper);color:var(--ink);cursor:pointer;min-width:0}
+.tk-pick-list button:hover{background:var(--pink)}
+.tk-pick-list button.on{background:var(--ink);color:var(--paper)}
+.tk-pick-list button .en{display:block;opacity:.55;font-size:9px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.tk-pick-list button.on .en{opacity:.75}
+.tk-pick-hint{font:10px/1.6 var(--mono);color:var(--dim)}
+.tk-pick-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  flex-wrap:wrap;border-top:1px dashed rgba(30,30,30,.3);padding-top:11px}
+.tk-verdict h3{
+  font-family:var(--display);font-weight:800;letter-spacing:-.035em;line-height:1.04;
+  margin:0 0 9px;font-size:clamp(24px,3.4vw,40px);
+}
+.tk-verdict p{margin:0;font:11px/1.7 var(--mono);color:var(--dim)}
+.tk-verdict p + p{margin-top:5px}
+.tk-verdict p b{color:var(--ink)}
+.tk-verdict .tag{
+  display:inline-block;background:var(--ink);color:var(--paper);
+  font:9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  padding:3px 6px;margin-bottom:9px;
+}
+.tk-scale-note{font:11px/1.5 var(--mono);color:var(--dim);margin-bottom:12px}
+.tk-scale-note b{color:var(--ink)}
+.tk-scale-cols{display:flex;gap:14px;flex-wrap:wrap}
+.tk-scale-col{flex:1 1 240px;min-width:0}
+.tk-scale-h{font:700 10px/1 var(--mono);letter-spacing:.1em;padding:5px 7px;
+  border:1px solid var(--ink);margin-bottom:7px;display:block}
+.tk-scale-h.do{background:var(--magenta);color:var(--paper)}
+.tk-scale-h.dont{background:#8ce8f0}
+.tk-scale-h.mid{background:var(--paper);color:var(--dim)}
+.tk-scale-list{list-style:none;margin:0;padding:0;font:11px/1.5 var(--mono)}
+.tk-scale-list li{display:flex;gap:6px;align-items:baseline;
+  border-bottom:1px dashed rgba(30,30,30,.16);padding:4px 0}
+.tk-scale-list .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk-scale-list .sc{font-weight:700;font-variant-numeric:tabular-nums}
+.tk-scale-list .er{color:var(--dim);font-size:9px;white-space:nowrap}
+/* Where the 2578 answers actually sit. A top-12 list hides how wide the field
+   was, and "lowest of a narrow field" is not the same claim as "against". */
+.tk-scale-hist{position:relative;display:flex;align-items:flex-end;gap:2px;height:46px;margin-top:14px}
+.tk-scale-hist i{flex:1;background:var(--ink);opacity:.35;min-height:1px}
+.tk-scale-hist i.hi{background:var(--magenta);opacity:1}
+.tk-scale-hist i.lo{background:#8ce8f0;opacity:1}
+/* Where the ruler's people sit inside everyone else's distribution. The strip
+   further down draws the same people on their own 0-1 axis; this is the
+   comparison the histogram exists for -- "my twelve are all bunched at 0.45" is
+   a different finding from "my twelve cover the range". */
+.tk-scale-hist em{position:absolute;bottom:0;width:1px;height:100%;font-style:normal;
+  background:var(--magenta);opacity:.7;pointer-events:auto}
+.tk-scale-hist em::after{content:"";position:absolute;left:-2px;bottom:0;width:5px;height:5px;
+  background:var(--magenta)}
+/* The anchors are labelled where they landed, directly under the distribution.
+   There used to be a second strip here drawing the same twelve people again on
+   their own 0-1 axis with a 0.00/0.50/1.00 scale under it: two pictures of one
+   measurement, and the reader had to match a tick up top against a list below.
+   Now the name sits under its own number.
+   The labels crowd in the middle because people crowd in the middle -- that is
+   the finding, not a layout accident -- so they are staggered onto however many
+   rows it takes. Row count comes from measured widths, never from a guess:
+   亚里士多德 and 老子 are not the same width and a guess either collides or
+   wastes a row. */
+.tk-anchor-row{position:relative;height:0}
+.tk-anchor-row i{position:absolute;top:0;width:1px;background:var(--magenta);opacity:.38}
+.tk-anchor-row span{position:absolute;transform:translateX(-50%);white-space:nowrap;
+  font:10px/1.25 var(--mono);color:var(--ink);cursor:default;padding:0 2px;
+  /* A safety valve, not a rule: the longest realistic name here is 22 characters
+     ("Abu al-Aswad al-Du'ali"). Past that a label is truncated because one
+     30-character name would otherwise push the legend a row deeper on its own.
+     The full name is in the title. */
+  max-width:220px;overflow:hidden;text-overflow:ellipsis;
+  /* --panel matches .win, so a label sits on the panel instead of on it. This is
+     what lets a row-2 leader run down past a row-0 name without printing a
+     hairline through the middle of a word. */
+  background:var(--panel)}
+.tk-anchor-row span:hover{background:var(--magenta)}
+.tk-scale-cal{font:10px/1.6 var(--mono);color:var(--dim);margin-top:22px;
+  border-top:1px dashed rgba(30,30,30,.2);padding-top:9px}
+.tk-scale-cal b{color:var(--ink)}
+/* The chip repeats the map's hue: pink = 说做, cyan = 说不做. */
+.tk-st{display:inline-block;width:7px;height:7px;border:1px solid var(--ink);flex:0 0 auto}
+.tk-st.do{background:#d45bb6}
+.tk-st.dont{background:#8ce8f0}
+/* No verified article: dashed, and it does not pretend to be clickable. */
+.tk-chip.plain{border-style:dashed}
+.tk-chip.plain:hover{background:var(--paper);color:var(--ink)}
+.tk-chip:hover,.tk-chip:focus-visible{background:var(--ink);color:var(--paper)}
+.tk-chip:hover b,.tk-chip:focus-visible b{background:var(--paper);color:var(--ink)}
+/* The English name rides along in grey, and goes quiet when the chip inverts. */
+.tk-en{color:var(--dim);font-size:9px;letter-spacing:.005em}
+.tk-chip:hover .tk-en,.tk-chip:focus-visible .tk-en{color:var(--paper);opacity:.72}
+a.tk-a{border-bottom:1px solid var(--pink);text-decoration:none}
+a.tk-a:hover,a.tk-a:focus-visible{background:var(--pink);border-bottom-color:var(--ink)}
+a.tk-a .tk-en{margin-left:5px}
+/* The timeline. One notch per century, the last notch is all of history. It is
+   disabled while the sweep is running so the playhead cannot be grabbed by a
+   stray click, and enabled the moment the sweep ends. */
+.tk-scrub{padding:14px 2px 2px}
+.tk-scrub input[type=range]{width:100%;-webkit-appearance:none;appearance:none;
+  height:22px;background:transparent;cursor:pointer;display:block}
+.tk-scrub input[type=range]:disabled{cursor:default;opacity:.45}
+.tk-scrub input[type=range]::-webkit-slider-runnable-track{height:2px;
+  background:var(--ink);opacity:.55}
+.tk-scrub input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+  width:13px;height:13px;margin-top:-6px;background:var(--pink);
+  border:1px solid var(--ink);border-radius:0}
+.tk-scrub input[type=range]::-moz-range-track{height:2px;background:var(--ink);opacity:.55}
+.tk-scrub input[type=range]::-moz-range-thumb{width:13px;height:13px;background:var(--pink);
+  border:1px solid var(--ink);border-radius:0}
+.tk-scrub-txt{display:flex;justify-content:space-between;margin-top:2px;
+  font:9px/1.5 var(--mono);color:var(--dim)}
+.tk-scrub-txt #tk-scrub-c{color:var(--ink);font-weight:700}
+/* The two ends of the current century, in the colours of the bar above. */
+.tk-pk{display:flex;align-items:baseline;gap:8px;font-size:15px}
+.tk-pk+.tk-pk{margin-top:6px}
+.tk-pk .lb{font:700 9px/1 var(--mono);letter-spacing:.08em;padding:4px 6px;
+  border:1px solid var(--ink);flex:0 0 auto;transform:translateY(-1px)}
+.tk-pk .lb.do{background:var(--magenta);color:var(--paper)}
+.tk-pk .lb.dont{background:#8ce8f0}
+.tk-pk .sc{font:700 12px/1 var(--mono);font-variant-numeric:tabular-nums}
+.tk-legend{display:flex;align-items:center;gap:9px;font:10px/1 var(--mono);color:var(--dim);
+  letter-spacing:.06em;margin-top:9px}
+.tk-ramp{height:9px;flex:0 1 190px;border:1px solid var(--ink);
+  background:linear-gradient(90deg,#784054 0%, #b47a92 40%, var(--pink) 75%, var(--magenta) 100%)}
+.tk-dots{display:inline-block;width:7px;height:7px;background:#4a4a4a;border:1px solid var(--ink);
+  vertical-align:-1px;margin-right:3px}
+/* The map's hue legend: pink leans "do it", cyan leans "don't". */
+.tk-sw{display:inline-block;width:8px;height:8px;border:1px solid var(--ink);vertical-align:-1px}
+.tk-sw.do{background:#d45bb6}
+.tk-sw.dont{background:#8ce8f0}
+.tk-sw.mid{background:#d6d6d6}
+.tk-sw.dim{background:rgba(150,150,150,.3);border-color:rgba(30,30,30,.35)}
+
+.hidden{display:none !important}
+.err{border:1px solid var(--ink);background:var(--pink);padding:14px;font-size:12px}
+footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase;opacity:.5;padding:26px 0 0}
+@media (max-width:640px){
+  .strip{display:none}
+}
+</style>
+</head>
+<body class="app">
+
+<div class="sky">
+  <div class="strip">Ask&nbsp;Great&nbsp;Thinkers</div>
+  <div class="wrap">
+    <div class="topbar">
+      <div>Ask&nbsp;Great&nbsp;Thinkers</div>
+      <div class="muted">Jev × TypeSafe</div>
+    </div>
+  </div>
+  <div class="corner l"></div><div class="corner r"></div>
+</div>
+
+<main class="stage">
+<div class="wrap stage-inner">
+
+  <!-- ============ ASK ============ -->
+  <section id="view-ask">
+    <div style="margin:0 0 30px">
+      <h1 class="display">Ask&nbsp;Great&nbsp;Thinkers</h1>
+    </div>
+    <div class="lead" style="margin:0 0 22px">
+      <span>2578 位思想家，一个分布</span><span class="f"></span><span>按百年铺开</span>
+    </div>
+
+    <div class="win paper askwin">
+      <div class="bar"><span>输入 · 你在想的那件事</span><span class="r">按 ⌘/Ctrl + Enter 提交</span></div>
+      <div class="body">
+        <textarea id="q" placeholder="例如：人类要成为一个星际文明吗？"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
+          <span class="lbl muted">原样丢进来就行，一句话也可以</span>
+          <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn" id="go-thinkers">Ask&nbsp;Great&nbsp;Thinkers</button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="win" id="ask-steps">
+      <div class="bar"><span>它接下来会做什么</span><span class="r">一条路 · 约 20 秒</span></div>
+      <div class="body tight steps-row">
+        <div><b>先把问题说清楚</b><span class="nw">把「要不要 X」改写成「你支持 X 吗？」</span> → <span class="nw">0 = 最反对，1 = 最支持</span></div>
+        <div><b>再问 2578 个人</b><span class="nw">每人正反两个方向各问一遍取中间</span> → <span class="nw">按百年铺成一张分布</span></div>
+      </div>
+    </div>
+
+    <div id="ask-err" class="err hidden" style="margin:0;flex:none"></div>
+
+    <footer>本地原型 · key 只留在服务端 · <a href="#" id="to-settings">设置 API key</a></footer>
+  </section>
+
+
+  <!-- ============ ASK GREAT THINKERS ============ -->
+  <section id="view-thinkers" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap">
+      <h1 class="display">Ask&nbsp;Great&nbsp;Thinkers</h1>
+      <div style="display:flex;gap:9px">
+        <button class="btn ghost" id="tk-anchors" title="换掉锚点上的默认 12 人">锚点 12 人</button>
+        <button class="btn ghost" id="tk-rerun" disabled
+                title="用现在这组锚点把同一个问题重问一遍">重跑</button>
+        <button class="btn ghost" id="tk-replay" disabled>重播</button>
+        <button class="btn ghost" id="tk-back">← 返回</button>
+      </div>
+    </div>
+
+    <div class="tk-asked">
+      <span class="lb">在问</span>
+      <div class="q" id="tk-q-text">—</div>
+      <div class="raw" id="tk-q-raw"></div>
+      <div class="raw" id="tk-q-en"></div>
+    </div>
+
+    <div class="tk-stale hidden" id="tk-stale">
+      <span id="tk-stale-txt">—</span>
+      <button class="btn" id="tk-stale-go">用新锚点重跑</button>
+    </div>
+
+    <div class="win paper" style="margin:0">
+      <div class="bar"><span id="tk-bar-label">准备中</span><span class="r" id="tk-bar-right">—</span></div>
+      <div class="body" style="gap:0">
+        <div class="tk-mapwrap">
+          <canvas id="tk-map"></canvas>
+          <div class="tk-hud">
+            <span class="yr" id="tk-year">—</span>
+            <span class="rt" id="tk-frame-label">—</span>
+          </div>
+          <div class="tk-count hidden" id="tk-count">3</div>
+        </div>
+        <div class="tk-scrub">
+          <input type="range" id="tk-range" min="0" max="0" value="0" step="1" disabled
+                 aria-label="按百年浏览人类历史">
+          <div class="tk-scrub-txt">
+            <span>最早</span><span id="tk-scrub-c">—</span><span>全部历史</span>
+          </div>
+        </div>
+        <div class="tk-legend">
+          <span class="tk-sw do"></span><span>这一百年里支持</span>
+          <span class="tk-sw dont"></span><span>反对</span>
+          <span class="tk-sw mid"></span><span>无所谓</span>
+          <span class="tk-sw dim"></span><span>那时还没出生 / 还没测</span>
+          <span>点越大 = 越不在中间</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tk-err" class="err hidden" style="margin:0"></div>
+    <div id="tk-out" class="hidden">
+      <div class="win">
+        <div class="bar"><span id="tk-spec-label">这一段里各文化圈：支持 / 无所谓 / 反对</span><span class="r" id="tk-spec-right">—</span></div>
+        <div class="body tight">
+          <div class="tk-spec" id="tk-spec"></div>
+          <div class="tk-chips" id="tk-chips"></div>
+          <div class="tk-chips-note" id="tk-chips-note">左边 6 个是这一段里最支持的，右边 6 个是最反对的，数字是 0–1 的位置。</div>
+          <div class="tk-stance">
+            <span class="tk-stance-lbl">这一段的人怎么说</span>
+            <div class="tk-stance-bar" id="tk-stance-bar"
+              title="这一百年里每个有分数的人，按 0–1 的位置分三类：>=0.60 支持、&lt;0.40 反对、中间是无所谓。每个人两个方向各问一遍取中间，所以中间那一格是「正反两遍读法一致」，不是「没意见」。"></div>
+            <span class="tk-stance-txt" id="tk-stance-txt">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="win" style="margin-top:14px">
+        <div class="bar"><span id="tk-pick-label">这一百年的两头</span><span class="r" id="tk-pick-right">—</span></div>
+        <div class="body tight" id="tk-pick"></div>
+      </div>
+
+      <div class="win hidden" id="tk-scale-win" style="margin-top:14px">
+        <div class="bar"><span id="tk-scale-title">全人类怎么看这件事</span><span class="r" id="tk-scale-right">还在问…</span></div>
+        <div class="body">
+          <div class="tk-verdict" id="tk-verdict"></div>
+          <div class="tk-scale-note" id="tk-scale-note">—</div>
+          <div class="tk-scale-cols">
+            <div class="tk-scale-col">
+              <div class="tk-scale-h do">最支持</div><ol class="tk-scale-list" id="tk-scale-yes"></ol>
+            </div>
+            <div class="tk-scale-col">
+              <div class="tk-scale-h dont">最反对</div><ol class="tk-scale-list" id="tk-scale-no"></ol>
+            </div>
+            <div class="tk-scale-col">
+              <div class="tk-scale-h mid">最无所谓</div><ol class="tk-scale-list" id="tk-scale-mid"></ol>
+            </div>
+          </div>
+          <div class="tk-scale-hist" id="tk-scale-hist"></div>
+          <!-- The anchors are the signature of the RUN, not of one century: the
+               same values come back under every slice. Printing them under
+               "700–799 年" invites the reader to think 老子 0.21 is a fact about
+               the eighth century. -->
+          <div id="tk-run-cal">
+            <div class="tk-anchor-row" id="tk-anchor-row"></div>
+            <div class="tk-scale-cal" id="tk-scale-cal">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer>
+      这一页只读不写 —— 历史人物怎么想，不是关于你的证据，所以不会进你的个人模型。
+    </footer>
+
+    <div class="tk-picker hidden" id="tk-picker">
+      <div class="win paper">
+        <div class="bar"><span>锚点上放谁</span><span class="r"><span id="tk-pick-n">12</span> / 24 人</span></div>
+        <div class="body tight">
+          <p class="tk-pick-hint" style="margin:0">
+            这同一批人被放进每一批请求里，所以他们跨 11 批的读数差，就是「不同批次之间到底可不可比」
+            的实测。默认那 12 个是我们挑的；换成谁，读数就按谁算。
+          </p>
+          <div class="tk-pick-chips" id="tk-pick-cur"></div>
+          <div class="tk-pick-row">
+            <input id="tk-pick-q" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="搜名字：中文、拼音或英文，例如 加缪 / jiamiu / Camus">
+            <button class="btn ghost" id="tk-pick-reset">恢复默认</button>
+          </div>
+          <div class="tk-pick-list" id="tk-pick-list"></div>
+          <div class="tk-pick-hint" id="tk-pick-hint">输入名字开始搜：中文、拼音、英文都行。只能从名录里选。</div>
+          <div class="tk-pick-foot">
+            <span class="tk-pick-hint"><b>确认</b>只是把这组人记下来，不发起请求。要看他们的读数才需要重跑：<b>11 次请求 · 约 20 秒</b>。同一句问题复用的是缓存，不花钱；换了问题或换了人才会再花一次 token。</span>
+            <span style="display:flex;gap:9px">
+              <button class="btn ghost" id="tk-pick-cancel">取消</button>
+              <button class="btn ghost" id="tk-pick-ok">确认</button>
+              <button class="btn" id="tk-pick-go">确认并重跑</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="view-settings" class="hidden">
+    <div style="margin:0 0 24px">
+      <div class="display" style="font-size:clamp(30px,7vw,62px)">设置</div>
+    </div>
+
+    <div class="win">
+      <div class="bar"><span>API key</span><span class="r">不会回到这个页面</span></div>
+      <div class="body">
+        <p class="small muted" style="margin:0">
+          填好的 key 存在服务端的 <code>should_i.settings.json</code>（权限 0600），
+          <b>不写进数据库</b>——那个库会被复制和备份，密钥不该跟着走。
+          这个页面只知道"填了没有"和最后四位，读取接口从来不会把 key 送回来。
+          这里填的优先于环境变量。
+        </p>
+
+        <div class="field">
+          <label for="s-jev">Jev · System One · 判断</label>
+          <input id="s-jev" type="password" autocomplete="off" spellcheck="false"
+                 placeholder="粘贴 Jev API key（留空并保存 = 清除）">
+          <div class="state" id="s-jev-state">—</div>
+        </div>
+
+        <div class="field">
+          <label for="s-deepseek">DeepSeek · 出题与拆解</label>
+          <input id="s-deepseek" type="password" autocomplete="off" spellcheck="false"
+                 placeholder="粘贴 DeepSeek API key（留空并保存 = 清除）">
+          <div class="state" id="s-deepseek-state">—</div>
+        </div>
+
+        <div style="display:flex;gap:11px;flex-wrap:wrap;align-items:center;margin-top:20px">
+          <button class="btn" id="s-save">保存并测试</button>
+          <button class="btn ghost" id="s-test">只测试现有的</button>
+          <button class="btn ghost" id="s-clear">清除文件里的 key</button>
+        </div>
+        <div class="small" id="s-msg" style="margin-top:14px"></div>
+        <div id="s-test-out"></div>
+      </div>
+    </div>
+
+    <footer>
+      <a href="#" id="to-ask">← 回到提问</a> ·
+      走 http://127.0.0.1，明文只在本机回路里
+    </footer>
+  </section>
+
+</div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var views = ["ask","settings","thinkers"];
+  function show(name){
+    views.forEach(function(v){ $("view-"+v).classList.toggle("hidden", v !== name); });
+    window.scrollTo({top:0, behavior:"instant" in window ? "instant" : "auto"});
+  }
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function post(url, body){
+    return fetch(url, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); });
+  }
+  function fail(node, res){
+    var msg = (res.data && (res.data.error || res.data.detail)) || ("HTTP " + res.status);
+    var hint = (res.data && res.data.hint) || "";
+    // A missing key is the common failure here, and it is one click from being
+    // fixed -- so offer the click instead of only naming the problem.
+    var missing = res.data && res.data.settings
+      && (!res.data.settings.jev_api_key.configured
+          || !res.data.settings.deepseek_api_key.configured);
+    node.innerHTML = "<b>出错了</b><br>" + esc(msg)
+      + (hint ? "<br><span class='muted'>" + esc(hint) + "</span>" : "")
+      + (missing ? "<br><a href='#' id='fail-settings'>→ 去填 API key</a>" : "");
+    node.classList.remove("hidden");
+    var link = document.getElementById("fail-settings");
+    if (link){ link.onclick = function(e){ e.preventDefault(); loadSettings(); }; }
+  }
+
+
+  /* ---------------- settings ----------------
+     The key is never read back: /api/settings answers "configured / where from /
+     last four digits" and nothing else. The input is cleared after a save so a
+     pasted key does not sit in the DOM for the rest of the session. */
+  var SOURCE_ZH = { settings: "设置文件", env: "环境变量" };
+
+  function describeKey(entry){
+    if (!entry || !entry.configured){
+      return "还没有 —— 请求会失败，先填一个，或设环境变量 <b>" + esc(entry ? entry.env_hint : "") + "</b>";
+    }
+    return "正在用 <b>" + esc(SOURCE_ZH[entry.source] || entry.source) + "</b> 的 key"
+         + (entry.hint ? "（" + esc(entry.hint) + "）" : "");
+  }
+
+  function renderSettings(s){
+    $("s-jev-state").innerHTML = describeKey(s.jev_api_key);
+    $("s-deepseek-state").innerHTML = describeKey(s.deepseek_api_key);
+    $("s-jev-state").className = "state" + (s.jev_api_key.configured ? " on" : " warn");
+    $("s-deepseek-state").className = "state" + (s.deepseek_api_key.configured ? " on" : " warn");
+    // Only a key stored in the file can be cleared from here; an env var is the
+    // shell's business, so say that instead of offering a button that does nothing.
+    var clearable = s.jev_api_key.source === "settings" || s.deepseek_api_key.source === "settings";
+    $("s-clear").classList.toggle("hidden", !clearable);
+  }
+
+  function renderTest(test){
+    if (!test) return;
+    $("s-test-out").innerHTML = ["jev", "deepseek"].map(function(name){
+      var row = test[name] || {};
+      var label = name === "jev" ? "Jev" : "DeepSeek";
+      return "<div class='verdict-line'><span class='k'><span class='dot "
+        + (row.ok ? "good" : "bad") + "'></span>" + label + "</span><span"
+        + (row.ok ? "" : " class='warn'") + ">"
+        + esc(row.detail || (row.ok ? "正常" : "失败")) + "</span></div>";
+    }).join("");
+  }
+
+  function settingsPost(payload, label){
+    $("s-msg").textContent = label;
+    return post("/api/settings", payload).then(function(res){
+      if (!res.ok){
+        $("s-msg").innerHTML = "<span class='warn'>"
+          + esc((res.data && res.data.error) || ("HTTP " + res.status)) + "</span>";
+        return;
+      }
+      renderSettings(res.data.settings);
+      renderTest(res.data.test);
+      if (res.data.test){
+        var ok = res.data.test.jev.ok && res.data.test.deepseek.ok;
+        $("s-msg").textContent = ok ? "两个都通。" : "有连接不通的地方，看下面。";
+      } else {
+        $("s-msg").textContent = "已保存。";
+      }
+    }).catch(function(){
+      $("s-msg").textContent = "保存失败，看服务端日志。";
+    });
+  }
+
+  function loadSettings(){
+    $("s-test-out").innerHTML = "";
+    $("s-msg").textContent = "";
+    // Both inputs are cleared on every open: whatever was pasted last time is
+    // either saved (and its hint is shown below) or was abandoned.
+    $("s-jev").value = ""; $("s-deepseek").value = "";
+    fetch("/api/settings").then(function(r){ return r.json(); }).then(function(data){
+      renderSettings(data.settings);
+      show("settings");
+    });
+  }
+
+  $("s-save").onclick = function(){
+    settingsPost({jev_api_key: $("s-jev").value, deepseek_api_key: $("s-deepseek").value,
+                  test: true}, "保存中…");
+    $("s-jev").value = ""; $("s-deepseek").value = "";
+  };
+  $("s-test").onclick = function(){
+    settingsPost({test: true}, "测试中…（要发两次真实请求，几秒）");
+  };
+  $("s-clear").onclick = function(){
+    settingsPost({jev_api_key: "", deepseek_api_key: ""}, "清除中…");
+  };
+  $("to-settings").onclick = function(e){ e.preventDefault(); loadSettings(); };
+  $("to-ask").onclick = function(e){ e.preventDefault(); show("ask"); };
+
+
+  /* ===================== Ask Great Thinkers ===================== */
+  var TK = {
+    plan:null, byId:{}, question:"", frame:null, frameFor:null, anchorIds:null,
+    // One entry per century, plus a last position that is all of history. The
+    // sweep walks this array; the scrubber is an index into it.
+    bins:[], scored:{}, frontier:0, pos:0,
+    playing:false, done:false, raf:0, timers:[],
+    scale:{scores:null, answered:0, roster:0, usage:null, error:null,
+           done:false, ctl:null, calibration:null, repeats:0, measurements:0,
+           reused:0, saved:null},
+    planReady:false, countdownDone:false
+  };
+  // How long one century holds the screen when the data is already there. The
+  // data is 19s for the whole roster and this is ~20s for the whole sweep, so
+  // the two finish together and the playhead spends its wait where the wait
+  // actually is: at the frontier, with "还在问" on the bar, never mid-century.
+  var TK_MS_PER_BIN = 620;
+  var TK_SCALE_N = 10;
+  var TK_SCALE_HI = 0.60;
+  var TK_SCALE_LO = 0.40;
+
+  var TK_LAT = [-58, 82], TK_LON = [-135, 152];
+
+  /* Land outline, baked from Natural Earth 110m land (TopoJSON decoded,
+     clipped to the viewport, rounded to whole degrees). 23 rings / 2,333
+     points. The dots are the real data; this is only so they read as "a
+     place" rather than a cloud. Stored as "x,y;x,y|..." to keep it compact. */
+  var TK_LAND_RAW = "152,59;151,59;151,60;150,60;149,59;145,59;142,59;139,57;135,55;137,55;137,54;138,54;139,54;140,54;141,53;141,52;141,51;141,50;140,48;139,47;138,46;137,45;136,44;135,43;134,43;133,43;132,43;131,43;131,42;130,42;130,41;129,41;129,40;128,40;128,39;127,39;128,39;129,37;129,36;129,35;128,35;127,34;126,34;126,35;127,36;126,37;127,37;126,38;125,38;125,39;125,40;124,40;123,40;122,39;121,39;122,39;121,40;122,40;122,41;121,41;120,40;119,39;118,39;118,38;119,38;119,37;120,37;121,38;122,37;123,37;121,37;121,36;120,36;119,35;120,34;121,33;121,32;122,32;122,31;121,31;122,30;122,29;122,28;121,28;120,27;120,26;119,25;117,24;116,23;115,23;114,22;114,23;113,22;112,22;111,21;110,20;110,21;109,22;108,22;107,21;106,20;106,19;106,18;107,17;108,16;109,15;109,13;109,12;108,11;107,10;106,10;105,9;105,10;104,10;103,11;103,12;102,13;101,13;100,13;100,12;99,11;99,10;99,9;100,9;100,8;100,7;101,7;102,7;102,6;103,6;103,5;103,4;103,3;104,3;104,2;104,1;103,2;101,3;101,4;101,5;100,5;100,6;100,7;99,8;98,8;98,9;99,10;98,11;99,11;98,12;99,13;98,14;98,15;98,16;97,17;97,16;95,16;94,16;95,17;94,18;94,19;94,20;93,20;92,21;92,22;91,23;90,23;91,22;90,22;89,22;88,22;87,21;86,20;85,19;84,18;83,18;82,17;82,16;81,16;80,16;80,15;80,14;80,13;80,12;80,10;79,10;79,9;78,9;78,8;77,9;76,10;76,11;75,12;75,13;75,14;74,15;74,16;73,18;73,19;73,20;73,21;71,21;70,21;69,22;70,22;69,23;68,24;67,24;67,25;66,25;65,25;63,25;61,25;60,25;59,26;57,26;57,27;56,27;55,26;53,27;52,28;51,29;50,30;49,30;48,30;48,29;49,28;49,27;50,27;50,26;51,25;51,26;52,26;52,25;51,25;52,24;53,24;54,24;55,25;56,26;56,25;57,24;58,24;59,24;59,23;60,23;60,22;59,22;59,21;58,20;58,19;57,19;57,18;56,18;55,18;55,17;54,17;53,17;52,16;51,15;50,15;49,14;48,14;47,14;47,13;46,13;45,13;44,13;43,13;43,14;43,15;43,16;43,17;42,17;42,18;41,19;40,20;39,21;39,22;39,23;38,24;37,24;37,25;37,26;36,27;35,28;35,29;35,30;35,29;34,28;33,28;32,30;33,29;33,28;34,26;35,25;36,24;35,24;36,23;37,22;37,21;37,20;37,19;38,18;39,17;39,16;40,15;41,14;42,14;42,13;43,13;43,12;43,11;44,11;44,10;45,10;46,11;47,11;48,11;49,11;50,12;51,12;51,11;51,10;51,9;50,8;49,7;49,5;48,4;47,3;46,2;44,1;43,0;42,-1;42,-2;41,-2;40,-3;40,-4;39,-5;39,-6;39,-7;39,-8;40,-9;40,-10;40,-11;40,-12;41,-13;41,-14;41,-15;40,-15;40,-16;39,-17;37,-18;36,-19;35,-20;35,-21;35,-22;36,-22;36,-23;35,-24;36,-24;35,-24;34,-25;33,-25;33,-26;33,-27;32,-28;32,-29;31,-29;31,-30;30,-31;29,-32;28,-33;27,-33;26,-34;25,-34;24,-34;23,-34;22,-34;21,-34;20,-35;19,-34;18,-34;18,-33;18,-32;18,-31;17,-30;16,-29;16,-28;15,-27;15,-26;15,-25;14,-24;14,-23;14,-22;13,-21;13,-20;13,-19;12,-18;12,-17;12,-16;12,-15;12,-14;13,-14;13,-13;13,-12;14,-12;14,-11;13,-10;13,-9;13,-8;13,-7;12,-6;12,-5;11,-4;10,-3;9,-2;9,-1;9,0;9,1;10,2;10,3;9,4;8,4;9,5;7,4;6,4;5,5;5,6;4,6;3,6;2,6;1,6;-1,5;-2,5;-3,5;-4,5;-5,5;-6,5;-7,5;-8,4;-9,5;-10,6;-11,6;-11,7;-12,7;-13,8;-13,9;-14,9;-14,10;-15,10;-15,11;-16,11;-16,12;-17,12;-17,13;-17,14;-18,15;-17,15;-17,16;-16,16;-17,17;-16,17;-16,18;-16,19;-16,20;-17,21;-17,22;-16,23;-16,24;-15,24;-15,25;-15,26;-14,26;-14,27;-13,28;-12,28;-11,29;-10,29;-10,30;-10,31;-9,32;-9,33;-8,34;-7,34;-6,35;-6,36;-5,36;-5,35;-4,35;-3,35;-2,35;-1,36;0,36;1,36;1,37;3,37;5,37;6,37;7,37;8,37;10,37;11,37;11,36;11,35;10,34;11,34;11,33;13,33;14,33;15,32;16,31;17,31;18,31;19,30;20,31;20,32;21,33;22,33;23,33;23,32;24,32;25,32;26,32;27,31;28,31;29,31;30,31;31,32;32,31;33,31;34,31;35,32;34,32;35,32;35,33;35,34;36,35;36,36;36,37;35,37;34,36;33,36;32,37;31,37;30,36;29,37;28,37;27,38;26,38;27,39;26,39;27,40;29,40;29,41;31,41;32,42;34,42;35,42;37,41;38,41;40,41;42,42;41,43;40,43;39,44;38,45;37,45;38,46;38,47;39,47;38,47;37,47;36,47;35,46;36,45;37,45;36,45;35,45;34,44;33,45;34,45;32,45;33,46;34,46;33,46;32,46;32,47;31,47;30,46;30,45;29,45;29,44;28,43;28,42;29,41;28,41;27,41;26,40;26,41;25,41;24,41;24,40;23,40;23,39;24,39;24,38;23,38;23,37;23,36;22,36;22,37;21,38;21,39;20,39;20,40;19,40;19,41;20,42;19,42;18,42;18,43;17,43;16,44;15,44;15,45;14,45;14,46;13,46;12,45;13,44;14,44;14,43;15,42;16,42;17,41;18,41;18,40;17,40;16,40;17,39;16,38;16,39;16,40;15,40;15,41;14,41;13,41;12,42;11,42;11,43;10,44;9,44;8,44;7,44;7,43;5,43;3,43;3,42;2,41;1,41;0,40;0,39;0,38;-1,38;-1,37;-2,37;-3,37;-4,37;-5,36;-6,36;-7,37;-8,37;-9,37;-9,38;-10,39;-9,39;-9,40;-9,41;-9,42;-9,43;-8,44;-7,44;-5,44;-4,43;-2,43;-1,44;-1,46;-2,47;-3,48;-4,48;-5,49;-3,49;-2,49;-2,50;-1,49;1,50;2,51;3,51;4,52;5,53;6,54;7,53;7,54;8,54;9,54;9,55;8,56;8,57;9,57;10,57;11,58;11,57;10,57;11,56;10,56;10,55;11,54;12,54;13,54;14,54;15,54;16,55;18,55;19,55;19,54;20,54;20,55;21,55;21,56;21,57;22,57;23,58;23,57;24,57;24,58;23,59;25,59;26,60;27,59;28,59;29,60;28,61;26,60;24,60;23,60;22,60;21,61;22,62;21,63;22,63;22,64;25,65;25,66;24,66;22,66;21,65;21,64;20,64;18,63;17,61;18,61;19,60;18,59;17,59;16,57;16,56;15,56;14,55;13,55;13,56;12,57;11,59;10,59;8,58;7,58;6,59;5,60;5,62;6,63;9,63;11,64;12,66;15,68;16,69;19,70;21,70;23,70;25,71;26,71;28,71;31,70;30,70;31,70;32,70;34,69;37,69;40,68;41,67;40,66;38,66;34,67;33,67;35,66;35,64;36,64;37,64;37,65;40,65;42,66;43,66;44,66;45,67;44,67;44,68;43,69;46,68;47,68;46,68;46,67;48,67;48,68;50,68;54,69;53,68;55,68;57,68;59,69;60,68;61,69;60,70;61,70;64,70;65,69;69,68;69,69;68,69;67,69;67,70;67,71;69,72;69,73;70,73;73,73;73,72;72,71;73,70;73,69;74,68;73,68;71,66;72,66;73,67;74,67;75,68;74,68;75,69;74,69;74,70;74,71;73,71;75,72;75,73;76,72;75,71;76,71;76,72;78,72;80,72;81,72;81,73;81,74;82,74;85,74;87,74;86,74;87,75;88,75;90,76;93,76;96,76;97,76;99,76;101,76;101,77;102,77;104,78;106,77;105,77;107,77;107,76;108,77;111,77;113,76;114,76;114,75;113,75;110,74;109,74;111,74;112,74;113,74;114,73;114,74;116,74;119,74;119,73;123,73;123,74;125,74;127,74;129,73;129,72;128,72;130,71;131,71;132,72;134,71;136,72;137,71;138,72;140,71;139,72;140,73;150,72;152,71|-91,69;-91,68;-89,69;-88,69;-88,68;-87,67;-86,68;-86,69;-86,70;-84,70;-83,70;-81,69;-82,68;-81,68;-81,67;-83,66;-85,66;-86,67;-86,66;-87,65;-88,64;-90,64;-91,64;-91,63;-92,63;-93,62;-94,61;-95,60;-95,59;-93,59;-93,58;-92,57;-91,57;-89,57;-88,56;-87,56;-86,56;-85,55;-83,55;-82,55;-82,54;-82,53;-81,52;-80,51;-79,52;-79,53;-79,54;-80,55;-78,55;-77,56;-77,57;-77,58;-79,59;-77,60;-78,61;-78,62;-77,63;-76,62;-75,62;-74,62;-73,62;-72,62;-71,61;-70,61;-70,60;-69,59;-68,59;-68,58;-66,59;-65,60;-64,59;-63,58;-61,57;-62,56;-60,56;-60,55;-58,55;-57,55;-57,54;-56,54;-56,53;-56,52;-57,51;-59,51;-60,50;-62,50;-64,50;-65,50;-66,50;-67,50;-69,49;-70,48;-71,47;-70,47;-69,48;-67,49;-65,49;-64,49;-65,48;-65,47;-64,46;-63,46;-62,46;-61,47;-60,46;-61,45;-63,45;-64,44;-65,44;-66,44;-64,45;-66,45;-67,45;-68,44;-69,44;-70,44;-71,43;-71,42;-70,42;-71,41;-72,41;-73,41;-74,41;-72,41;-73,41;-74,41;-74,40;-75,39;-76,39;-75,39;-75,38;-76,37;-76,38;-76,39;-77,39;-76,38;-77,38;-76,38;-76,37;-76,36;-76,35;-77,35;-78,34;-79,34;-79,33;-80,33;-81,32;-81,31;-81,30;-81,29;-81,28;-80,27;-80,26;-80,25;-81,25;-81,26;-82,26;-82,27;-83,27;-83,28;-83,29;-84,30;-85,30;-86,30;-88,30;-89,30;-90,30;-89,30;-89,29;-90,29;-91,29;-92,30;-93,30;-94,30;-95,29;-96,29;-97,28;-97,27;-97,26;-98,25;-98,24;-98,23;-98,22;-97,21;-97,20;-96,19;-95,19;-94,18;-93,19;-92,19;-91,19;-91,20;-90,21;-89,21;-88,21;-87,22;-87,21;-87,20;-88,20;-87,19;-88,19;-88,18;-88,19;-88,18;-88,17;-89,16;-88,16;-87,16;-86,16;-85,16;-84,16;-84,15;-83,15;-83,14;-84,14;-84,13;-83,13;-83,12;-84,12;-84,11;-83,10;-82,9;-81,9;-80,9;-80,10;-79,10;-79,9;-78,9;-77,9;-76,9;-76,10;-75,11;-74,11;-73,11;-73,12;-72,12;-71,12;-72,11;-72,10;-72,9;-71,9;-71,10;-71,11;-70,11;-70,12;-70,11;-69,11;-68,11;-67,11;-66,11;-66,10;-65,10;-64,10;-64,11;-63,11;-62,11;-63,10;-62,10;-61,9;-60,9;-60,8;-59,8;-58,7;-58,6;-57,6;-56,6;-55,6;-54,6;-53,5;-52,5;-52,4;-51,4;-51,2;-50,2;-50,1;-51,0;-50,0;-49,0;-49,-1;-48,-1;-47,-1;-45,-2;-44,-2;-45,-3;-43,-2;-41,-3;-40,-3;-39,-4;-37,-5;-36,-5;-35,-5;-35,-7;-35,-9;-36,-10;-37,-11;-38,-12;-38,-13;-39,-13;-39,-14;-39,-16;-39,-17;-39,-18;-40,-18;-40,-20;-41,-21;-41,-22;-42,-22;-42,-23;-43,-23;-45,-23;-45,-24;-46,-24;-48,-25;-48,-26;-49,-27;-48,-27;-49,-28;-49,-29;-50,-29;-51,-31;-52,-32;-53,-33;-53,-34;-54,-34;-55,-35;-56,-35;-57,-34;-58,-34;-57,-35;-57,-36;-57,-37;-58,-38;-59,-39;-61,-39;-62,-39;-62,-40;-62,-41;-63,-41;-64,-41;-65,-41;-65,-42;-64,-42;-63,-43;-64,-43;-65,-43;-65,-45;-66,-45;-67,-45;-67,-46;-68,-46;-67,-47;-66,-47;-66,-48;-67,-49;-68,-50;-69,-50;-69,-51;-69,-52;-68,-52;-69,-52;-70,-53;-71,-53;-71,-54;-73,-54;-74,-53;-75,-52;-75,-51;-75,-50;-76,-49;-75,-48;-74,-47;-76,-47;-75,-46;-74,-44;-73,-44;-73,-42;-74,-43;-74,-42;-74,-40;-73,-39;-74,-38;-74,-37;-73,-37;-73,-36;-72,-34;-71,-32;-72,-31;-71,-30;-71,-29;-71,-28;-71,-26;-70,-24;-70,-21;-70,-20;-70,-18;-71,-18;-71,-17;-73,-16;-75,-15;-76,-15;-76,-14;-77,-12;-78,-10;-79,-8;-80,-7;-81,-7;-81,-6;-81,-5;-81,-4;-80,-3;-80,-2;-80,-3;-81,-2;-81,-1;-80,0;-80,1;-79,1;-79,2;-78,3;-77,4;-77,5;-78,6;-77,6;-77,7;-78,7;-78,8;-79,9;-80,9;-80,8;-80,7;-81,7;-81,8;-82,8;-83,8;-84,8;-84,9;-85,10;-86,10;-86,11;-87,12;-88,13;-87,13;-88,13;-89,13;-90,14;-91,14;-92,14;-92,15;-93,16;-94,16;-95,16;-96,16;-97,16;-98,16;-99,17;-100,17;-101,17;-102,18;-103,18;-104,19;-105,19;-105,20;-106,20;-105,21;-106,21;-105,21;-106,22;-106,23;-107,24;-108,25;-109,26;-110,27;-111,28;-112,28;-112,29;-113,30;-113,31;-114,32;-115,32;-115,31;-115,30;-114,30;-114,29;-113,29;-113,28;-112,28;-112,27;-111,26;-111,25;-111,24;-110,24;-109,23;-110,23;-111,24;-112,24;-112,25;-112,26;-113,26;-113,27;-114,27;-115,28;-114,28;-114,29;-115,29;-116,30;-116,31;-117,32;-117,33;-118,34;-119,34;-120,34;-121,35;-122,36;-123,38;-124,39;-124,40;-124,41;-124,42;-125,43;-124,44;-124,46;-124,47;-124,48;-125,48;-123,48;-123,47;-122,47;-123,48;-123,49;-125,50;-126,50;-127,51;-128,52;-129,53;-129,54;-131,54;-131,55;-132,55;-132,56;-134,57;-134,58;-135,58;-135,69;-134,70;-133,70;-131,70;-130,70;-129,70;-128,70;-127,70;-126,69;-124,70;-124,69;-123,70;-121,70;-120,69;-118,69;-116,69;-115,69;-114,68;-115,68;-113,68;-111,68;-110,68;-109,67;-108,68;-109,68;-108,69;-107,69;-106,69;-105,69;-104,68;-103,68;-101,68;-100,68;-98,68;-99,68;-98,69;-96,68;-96,67;-95,68;-94,69;-95,70;-96,70;-96,71;-95,72;-94,72;-93,71;-92,70|144,-14;144,-15;145,-14;145,-15;145,-16;146,-17;146,-18;146,-19;147,-19;148,-20;149,-20;149,-21;150,-22;150,-23;151,-22;151,-23;152,-24;152,-33;151,-34;151,-35;150,-36;150,-37;149,-38;148,-38;147,-38;147,-39;146,-39;145,-39;145,-38;144,-38;144,-39;143,-39;142,-38;141,-38;140,-37;140,-36;139,-36;138,-36;138,-35;138,-34;138,-35;137,-35;138,-34;138,-33;137,-34;136,-34;136,-35;135,-34;135,-33;134,-33;133,-32;132,-32;131,-31;130,-32;128,-32;127,-32;126,-32;125,-33;124,-33;124,-34;123,-34;122,-34;121,-34;120,-34;119,-35;119,-34;119,-35;118,-35;117,-35;116,-34;115,-34;116,-33;116,-32;115,-31;115,-30;115,-29;114,-28;114,-27;113,-27;113,-26;114,-27;113,-26;114,-26;114,-25;113,-24;114,-24;114,-23;114,-22;114,-23;115,-22;115,-21;116,-21;117,-21;118,-20;119,-20;120,-20;121,-20;121,-19;122,-19;122,-18;122,-17;123,-16;123,-17;124,-17;124,-16;125,-15;126,-15;126,-14;127,-14;128,-14;128,-15;129,-15;130,-15;129,-14;130,-14;130,-13;131,-13;131,-12;132,-12;133,-12;132,-11;133,-11;134,-12;135,-12;136,-12;137,-12;137,-13;136,-13;136,-14;135,-15;136,-16;137,-16;138,-16;138,-17;139,-17;140,-18;141,-17;141,-16;142,-15;142,-14;142,-13;142,-12;142,-11;143,-11;143,-12;144,-13|-27,82;-25,82;-23,82;-22,82;-23,81;-21,82;-16,82;-13,82;-12,81;-16,81;-17,80;-20,80;-18,80;-19,79;-20,79;-20,78;-18,77;-20,77;-22,77;-20,76;-20,75;-21,75;-19,74;-22,74;-20,74;-21,73;-22,73;-24,73;-22,73;-22,72;-24,73;-25,72;-23,72;-22,71;-24,70;-24,71;-26,71;-25,71;-26,70;-24,70;-22,70;-25,69;-28,68;-31,68;-32,68;-33,68;-34,67;-36,66;-37,66;-38,66;-40,65;-41,65;-41,64;-41,63;-43,63;-42,62;-43,61;-43,60;-45,60;-46,61;-48,61;-49,61;-50,62;-52,64;-52,65;-54,66;-53,67;-54,67;-53,68;-51,69;-51,70;-52,70;-53,69;-55,70;-54,71;-53,71;-51,71;-53,71;-54,72;-55,71;-56,72;-55,73;-56,74;-57,75;-59,75;-59,76;-61,76;-63,76;-66,76;-69,76;-70,76;-71,77;-69,77;-67,77;-71,78;-73,78;-69,79;-66,79;-65,80;-68,80;-67,81;-64,81;-62,81;-63,82;-61,82;-53,82;-47,82;-45,82;-46,82|-87,73;-86,73;-85,73;-82,74;-81,73;-81,72;-79,72;-78,73;-76,72;-74,72;-74,71;-72,72;-71,71;-69,71;-68,70;-67,69;-69,69;-66,68;-65,68;-63,67;-62,67;-62,66;-64,65;-65,65;-67,66;-68,66;-67,65;-66,65;-65,64;-65,63;-66,63;-69,64;-67,63;-66,62;-69,62;-71,63;-72,63;-72,64;-73,64;-75,65;-75,64;-78,64;-79,65;-78,65;-76,65;-74,65;-74,66;-73,67;-73,68;-75,69;-77,69;-76,69;-77,70;-78,70;-79,70;-81,70;-85,70;-87,70;-89,70;-90,71;-88,71;-90,71;-90,72;-89,73;-88,74;-86,74|-64,82;-67,82;-68,82;-65,82;-68,81;-69,81;-71,80;-73,80;-74,79;-77,79;-76,79;-75,79;-76,78;-78,78;-80,77;-78,77;-81,76;-83,76;-86,76;-88,76;-89,76;-90,77;-88,77;-88,78;-85,78;-86,78;-88,78;-87,79;-85,79;-87,80;-84,80;-83,80;-82,80;-84,81;-88,81;-89,81;-90,81;-91,82;-92,82;-91,82|134,-1;134,-3;135,-3;136,-2;137,-2;138,-2;139,-2;140,-2;141,-3;143,-3;145,-4;146,-5;148,-6;148,-7;147,-7;148,-8;149,-9;149,-10;150,-10;151,-10;151,-11;150,-11;150,-10;149,-10;148,-10;147,-9;146,-8;145,-8;144,-8;143,-8;143,-9;142,-9;141,-9;140,-8;139,-8;138,-8;139,-7;138,-6;138,-5;136,-5;135,-4;134,-4;133,-4;133,-3;132,-3;133,-2;134,-2;132,-2;131,-1;132,-1;132,0|118,2;119,1;118,1;117,0;118,-1;117,-1;117,-2;116,-4;115,-4;114,-3;113,-3;112,-3;111,-3;110,-3;110,-2;110,-1;109,0;109,1;110,2;111,2;111,3;112,3;113,3;114,4;114,5;115,5;116,6;117,7;118,6;119,5;118,5;119,4;118,4;117,3|50,-14;50,-15;50,-16;50,-15;50,-16;50,-17;49,-17;49,-18;49,-19;49,-20;48,-22;48,-24;47,-25;46,-25;45,-26;45,-25;44,-25;44,-24;43,-23;43,-22;43,-21;44,-21;44,-20;44,-19;44,-18;44,-17;44,-16;45,-16;46,-16;47,-15;48,-15;48,-14;49,-13;49,-12;50,-12;50,-13|-114,73;-115,73;-112,73;-111,72;-110,73;-109,73;-108,72;-108,73;-107,73;-105,73;-105,72;-104,71;-103,70;-101,70;-103,70;-102,69;-104,69;-106,69;-107,69;-109,69;-112,69;-113,69;-114,69;-115,69;-116,69;-117,70;-115,70;-114,70;-112,70;-114,71;-116,71;-118,71;-116,71;-118,71;-119,72;-118,73;-115,73|106,-6;105,-6;104,-5;103,-4;102,-4;101,-3;101,-2;100,-1;99,0;99,1;99,2;98,2;97,3;96,4;95,5;96,5;97,5;98,4;99,4;100,3;101,2;102,2;102,1;103,1;104,0;103,-1;104,-1;105,-2;106,-2;106,-3;106,-4|-3,59;-4,58;-3,58;-2,58;-2,57;-3,56;-2,56;-1,55;0,54;0,53;2,53;2,52;1,52;1,51;-1,51;-2,50;-3,51;-4,50;-5,50;-6,50;-4,51;-3,51;-5,52;-4,52;-5,53;-3,53;-3,54;-4,55;-5,55;-5,56;-6,55;-6,56;-6,57;-6,58;-5,59;-4,59|141,37;141,36;140,35;139,35;137,35;136,33;135,34;135,35;133,34;132,34;131,34;132,33;131,31;130,31;130,32;130,33;129,33;130,34;131,34;132,35;133,35;135,36;136,36;137,37;139,38;140,39;140,41;141,41;142,40;142,39;141,38|58,71;57,71;54,71;53,71;52,71;51,72;52,72;52,73;54,74;56,75;58,76;61,76;65,76;66,77;68,77;69,77;68,76;65,76;62,75;58,74;57,73;55,72;56,72|-87,80;-86,79;-87,79;-89,78;-91,78;-93,78;-94,79;-93,79;-95,79;-96,80;-97,80;-96,81;-95,81;-94,81;-95,81;-92,81;-91,81;-89,81;-88,80|-95,77;-94,77;-92,77;-91,76;-90,76;-89,76;-88,76;-86,75;-85,76;-83,76;-81,76;-80,75;-82,74;-83,75;-86,74;-88,74;-90,75;-92,75;-93,75;-93,76;-94,76;-96,76;-97,77|-15,66;-14,65;-15,64;-18,64;-19,63;-20,64;-23,64;-22,64;-24,65;-22,65;-24,66;-22,66;-21,66;-19,66;-18,66;-16,67|-120,71;-123,71;-124,71;-126,72;-125,73;-124,74;-125,74;-122,74;-120,74;-118,74;-117,74;-116,73;-117,73;-119,73;-120,72|18,80;22,79;19,79;18,78;17,77;16,77;14,77;15,78;13,78;11,79;10,80;13,80;14,80;15,80;16,80;17,80|125,1;124,0;123,0;121,0;120,0;120,-1;121,-1;123,-1;122,-2;122,-3;122,-4;123,-5;123,-6;122,-5;123,-4;122,-5;121,-5;122,-4;121,-4;121,-3;120,-3;120,-4;120,-6;119,-5;120,-4;119,-3;119,-2;119,-1;120,0;120,1;121,1;122,1;123,1;124,1;125,2|-108,76;-107,76;-106,76;-106,75;-110,75;-112,74;-114,74;-114,75;-112,75;-116,75;-118,75;-116,76;-115,76;-113,76;-111,76;-109,75;-110,76;-110,77;-109,77|100,79;98,79;95,79;93,79;93,80;91,80;94,81;96,81;98,81;100,80|-56,51;-57,50;-56,50;-55,50;-56,50;-55,49;-54,50;-53,49;-54,49;-53,49;-53,48;-53,47;-54,47;-54,48;-55,47;-56,47;-55,47;-56,48;-57,48;-59,48;-59,49;-58,49;-57,51;-56,52;-55,52";
+  var TK_LAND = TK_LAND_RAW.split("|").map(function(ring){
+    return ring.split(";").map(function(pt){
+      var q = pt.split(",");
+      return [parseInt(q[0],10), parseInt(q[1],10)];
+    });
+  });
+
+  /* Modern thinkers cluster hard: the whole American school sits within a
+     degree of Boston. A stable per-id offset keeps them individually visible
+     without pretending to a precision the birthplace data does not have.
+     The offset is about +-2.2 degrees, roughly 6px at the default map size. */
+  function tkJitter(id, axis){
+    var h = 2166136261;
+    for (var i = 0; i < id.length; i++){
+      h ^= id.charCodeAt(i) + axis * 131;
+      h = (h * 16777619) >>> 0;
+    }
+    return ((h % 1000) / 1000 - 0.5) * 4.4;
+  }
+
+  function tkProj(lon, lat, W, H){
+    return [ (lon - TK_LON[0]) / (TK_LON[1] - TK_LON[0]) * W,
+             (TK_LAT[1] - lat) / (TK_LAT[1] - TK_LAT[0]) * H ];
+  }
+
+  function tkPlan(){
+    if (TK.plan) return Promise.resolve(TK.plan);
+    return fetch("/api/thinkers/plan").then(function(r){ return r.json(); })
+      .then(function(d){
+        TK.plan = d;
+        d.dots.forEach(function(t){
+          TK.byId[t.id] = t;
+          // Everything the search needs, built once at load rather than on
+          // every keystroke. `py` is space-separated so it stays readable in
+          // the payload; matching ignores the spaces, which is also what makes
+          // "kang de" find the same person as "kangde".
+          t.zhf = tkFold(t.zh);
+          t.enf = tkFold(t.en);
+          t.pyf = tkFold((t.py || "").replace(/ /g, ""));
+          t.pyp = (t.py || "").split(" ")[0];   // the primary reading, no tones
+        });
+        // The shipped twelve until the reader replaces them. Held as ids, not
+        // as an index into the roster, because the roster is rebuilt from
+        // Wikidata between runs and a position would silently point at someone
+        // else afterwards.
+        if (!TK.anchorIds) TK.anchorIds = tkPickStored(d) || (d.anchors || []).map(function(a){ return a.id; });
+        tkPickLabel();
+        return d;
+      });
+  }
+
+  function tkStop(){
+    TK.timers.forEach(clearTimeout);
+    TK.timers = [];
+    if (TK.raf) cancelAnimationFrame(TK.raf);
+    TK.raf = 0;
+  }
+  function tkLater(fn, ms){ TK.timers.push(setTimeout(fn, ms)); }
+
+
+  function tkReset(){
+    tkAbortScale();
+    tkStop();
+    TK.playing = false; TK.done = false; TK.pos = 0; TK.raf = 0;
+    TK.scored = {}; TK.frontier = null;
+    TK.planReady = false; TK.countdownDone = false;
+    TK.scale = {scores:null, answered:0, roster:0, usage:null, error:null,
+                done:false, ctl:null, calibration:null, repeats:0,
+                measurements:0, chunks:0, total:0, reused:0, saved:null};
+    $("tk-out").classList.add("hidden");
+    $("tk-err").classList.add("hidden");
+    $("tk-replay").disabled = true;
+    // Hidden here rather than repainted: a reset is always followed by a run,
+    // and that run is what decides whether the two sets agree.
+    $("tk-stale").classList.add("hidden");
+    $("tk-range").disabled = true;
+    $("tk-range").value = "0";
+    $("tk-scrub-c").textContent = "—";
+    $("tk-year").textContent = "—";
+    $("tk-frame-label").textContent = "—";
+    $("tk-bar-label").textContent = "准备中";
+    $("tk-bar-right").textContent = "—";
+    $("tk-count").classList.add("hidden");
+    $("tk-spec").innerHTML = "";
+    $("tk-chips").innerHTML = "";
+    $("tk-pick").innerHTML = "";
+    $("tk-stance-bar").innerHTML = "";
+    $("tk-stance-txt").textContent = "—";
+    ["tk-scale-yes","tk-scale-no","tk-scale-mid","tk-scale-hist","tk-anchor-row"].forEach(function(id){
+      $(id).innerHTML = "";
+    });
+    $("tk-anchor-row").style.height = "0px";
+    $("tk-scale-cal").textContent = "—";
+    $("tk-scale-win").classList.add("hidden");
+    $("tk-verdict").innerHTML = "";
+    $("tk-scale-right").textContent = "还在问…";
+    $("tk-scale-note").textContent = "—";
+    tkMap(null, null);
+  }
+
+  function tkSize(){
+    var c = $("tk-map");
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = c.clientWidth || 900, h = c.clientHeight || Math.round(w * 140 / 360);
+    if (c.width !== Math.round(w*dpr) || c.height !== Math.round(h*dpr)){
+      c.width = Math.round(w*dpr); c.height = Math.round(h*dpr);
+    }
+    return [c.width, c.height, dpr];
+  }
+
+  /* One channel, because there is one question: TK.scored[id], the centred noul
+     reading. 0..1 -> hue, and |v - 0.5| -> radius and opacity, so a strong
+     opinion is a big bright dot and "0.50" stays small on purpose. An id with no
+     score means we never got an answer, and it falls back to the grey ramp
+     rather than being painted as if it had one.
+
+     This used to be two channels -- `rel` (share / frame peak) and `stance` --
+     back when the map was painted from a 255-option Choice. Both went with the
+     Choice layer: a share is a within-frame quantity whose denominator is the
+     other 254 people, so it cannot be put on one scale across eleven requests. */
+
+  function tkMap(pos, revealYear){
+    if (!TK.plan || !TK.bins.length) return;
+    var c = $("tk-map"), ctx = c.getContext("2d");
+    var S = tkSize(), W = S[0], H = S[1], dpr = S[2];
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = "#141414";
+    ctx.fillRect(0,0,W,H);
+
+    ctx.strokeStyle = "rgba(254,254,254,.055)";
+    ctx.lineWidth = Math.max(1, dpr*0.5);
+    var lon, lat;
+    for (lon = -150; lon <= 150; lon += 30){
+      var a = tkProj(lon, TK_LAT[1], W, H), b = tkProj(lon, TK_LAT[0], W, H);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    }
+    for (lat = -40; lat <= 80; lat += 30){
+      var c1 = tkProj(TK_LON[0], lat, W, H), c2 = tkProj(TK_LON[1], lat, W, H);
+      ctx.beginPath(); ctx.moveTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.stroke();
+    }
+
+    ctx.fillStyle = "#232323";
+    ctx.strokeStyle = "rgba(254,254,254,.16)";
+    ctx.lineWidth = Math.max(1, dpr*0.6);
+    TK_LAND.forEach(function(poly){
+      ctx.beginPath();
+      poly.forEach(function(pt, i){
+        var q = tkProj(pt[0], pt[1], W, H);
+        if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
+      });
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    });
+
+    // `pos === null` is the reset state: the world and its land, no playhead,
+    // nobody lit yet. Falling through instead did `TK.bins[null].hi` and threw,
+    // which is what broke every SECOND run -- a second question, or a re-run on
+    // a new ruler -- because by then TK.bins was no longer empty and the guard
+    // above no longer covered it. The coast outline is already drawn, so this
+    // is a clean "nothing asked yet" rather than a stale map from the last run.
+    if (pos === null || pos === undefined) return;
+
+    var last = pos >= TK.bins.length;
+    var cutoff = last ? null : TK.bins[pos].hi;
+    var here = {};
+    if (!last) TK.bins[pos].ids.forEach(function(id){ here[id] = true; });
+    var base = Math.max(1.3, dpr*1.15);
+
+    // Three passes so nothing important is buried: the dead ground first, then
+    // the centuries already behind us, then the century being shown. A dot's
+    // size is how far it is from the fence -- a strong opinion is a big dot,
+    // and "0.50" is small on purpose.
+    TK.plan.dots.forEach(function(t){
+      if (cutoff !== null && t.end_year > cutoff) return;
+      if (here[t.id]) return;
+      var v = TK.scored[t.id], q = tkProj(t.lon, t.lat, W, H);
+      ctx.fillStyle = last ? tkScoreColor(v, v === undefined ? 0.22 : 0.5)
+                           : tkScoreColor(v, 0.3);
+      ctx.beginPath();
+      ctx.arc(q[0], q[1], base * (v === undefined ? 0.8 : 0.8 + 1.1 * Math.abs(v - 0.5) * 2),
+              0, 6.2832);
+      ctx.fill();
+    });
+
+    var lit = TK.plan.dots.filter(function(t){
+      return here[t.id] || last;
+    }).sort(function(a, b){
+      var va = TK.scored[a.id], vb = TK.scored[b.id];
+      return Math.abs((va === undefined ? 0.5 : va) - 0.5)
+           - Math.abs((vb === undefined ? 0.5 : vb) - 0.5);
+    });
+
+    lit.forEach(function(t){
+      var v = TK.scored[t.id];
+      var q = tkProj(t.lon + tkJitter(t.id, 0), t.lat + tkJitter(t.id, 1), W, H);
+      // Sweeping within the century: a person lights up on their own end year,
+      // so the century fills in left to right instead of popping at once.
+      if (revealYear !== null && revealYear !== undefined && t.end_year > revealYear){
+        ctx.fillStyle = "rgba(150,150,150,.22)";
+        ctx.beginPath(); ctx.arc(q[0], q[1], base*0.8, 0, 6.2832); ctx.fill();
+        return;
+      }
+      var op = v === undefined ? 0.30 : 0.62 + 0.38 * Math.min(1, Math.abs(v - 0.5) * 3);
+      var rad = base * (1.0 + (v === undefined ? 0.3 : 2.4 * Math.abs(v - 0.5) * 2));
+      ctx.fillStyle = tkScoreColor(v, op);
+      ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 6.2832); ctx.fill();
+      if (v !== undefined && Math.abs(v - 0.5) >= 0.3){
+        ctx.strokeStyle = "rgba(254,254,254,.5)";
+        ctx.lineWidth = Math.max(1, dpr*0.5);
+        ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 6.2832); ctx.stroke();
+      }
+    });
+  }
+
+  function tkCountdown(done){
+    var el = $("tk-count");
+    var seq = ["3","2","1"];
+    var i = 0;
+    el.classList.remove("hidden");
+    el.innerHTML = seq[0] + "<small>全世界的思想者，一起判这一件事</small>";
+    var step = function(){
+      i += 1;
+      if (i < seq.length){
+        el.innerHTML = seq[i] + "<small>全世界的思想者，一起判这一件事</small>";
+        tkLater(step, 640);
+      } else {
+        el.innerHTML = "<div style='text-align:center'>判<small>正在问 Jev</small></div>";
+        tkLater(function(){ el.classList.add("hidden"); done(); }, 520);
+      }
+    };
+    tkLater(step, 640);
+  }
+
+  function tkCircleLabel(id){
+    return (TK.plan && TK.plan.circles && TK.plan.circles[id]) || id;
+  }
+
+  /* ================== 一百年一格，最后一格是全部历史 ================== */
+  // The animation used to be eleven Choice frames on a fixed 45-second
+  // schedule: it took the same time whether the network was fast or slow, and
+  // it was showing a different measurement from the ruler underneath it. Now
+  // every frame IS the ruler, cut by century, and the playhead moves on what
+  // has actually come back -- a century is shown only once every person in it
+  // has a score, so the animation cannot outrun its own data.
+
+  function tkCenturies(){
+    var dots = (TK.plan && TK.plan.dots) || [];
+    if (!dots.length) return [];
+    var lo = dots[0].end_year, hi = dots[0].end_year;
+    dots.forEach(function(t){
+      if (t.end_year < lo) lo = t.end_year;
+      if (t.end_year > hi) hi = t.end_year;
+    });
+    var out = [], i, index = {};
+    for (var b = Math.floor(lo / 100) * 100; b <= hi; b += 100){
+      out.push({ lo:b, hi:Math.min(b + 99, hi), ids:[] });
+    }
+    out.forEach(function(bin, k){ index[bin.lo] = k; });
+    dots.forEach(function(t){
+      var k = index[Math.floor(t.end_year / 100) * 100];
+      if (k !== undefined) out[k].ids.push(t.id);
+    });
+    return out;
+  }
+
+  // Years, not "the 5th century BC". Every other date in this product is a
+  // plain number on the end-year axis, and a frame label that needs a decoder
+  // ring is worse than a wide one.
+  function tkSpanLabel(lo, hi){
+    if (lo < 0 && hi < 0) return "公元前 " + (-lo) + "–" + (-hi) + " 年";
+    if (lo < 0) return "公元前 " + (-lo) + " – 公元 " + hi + " 年";
+    return lo + "–" + hi + " 年";
+  }
+
+  // The people in one position: a century, or all of them at the last stop.
+  function tkSlice(pos){
+    if (!TK.bins.length) return {dots:[], label:"—", lo:null, hi:null};
+    if (pos >= TK.bins.length){
+      return {dots:TK.plan.dots.slice(), label:"全部历史", lo:null, hi:null};
+    }
+    var bin = TK.bins[pos];
+    return {
+      dots: bin.ids.map(function(id){ return TK.byId[id]; }),
+      label: tkSpanLabel(bin.lo, bin.hi), lo:bin.lo, hi:bin.hi
+    };
+  }
+
+  // Three different nothings, and only one of them is "wait". A century the
+  // roster simply has nobody in (公元前 800–701 is empty: nobody in the 2578
+  // died in it) must not keep saying "还没有分数" after the run has finished --
+  // that reads as a stall and never clears.
+  function tkEmpty(slice){
+    if (!slice.dots.length) return "这一百年名录上没有人";
+    if (TK.done) return "这一百年的人没有拿到分数";
+    return "还在等这一百年的分数…";
+  }
+
+  // How many leading centuries have every one of their people scored. This is
+  // the whole "the animation follows the run" idea in one function: the
+  // playhead may go where the answers are, and not one step further.
+  function tkFrontier(){
+    if (TK.frontier !== null) return TK.frontier;
+    var n = 0;
+    for (var i = 0; i < TK.bins.length; i++){
+      var ids = TK.bins[i].ids, ready = true;
+      for (var j = 0; j < ids.length; j++){
+        if (TK.scored[ids[j]] === undefined){ ready = false; break; }
+      }
+      if (!ready) break;
+      n = i + 1;
+    }
+    TK.frontier = n;
+    return n;
+  }
+
+  function tkTally(dots){
+    var y = 0, m = 0, n = 0, got = 0;
+    dots.forEach(function(t){
+      var v = TK.scored[t.id];
+      if (v === undefined) return;
+      got += 1;
+      if (v >= TK_SCALE_HI) y += 1;
+      else if (v < TK_SCALE_LO) n += 1;
+      else m += 1;
+    });
+    return {y:y, m:m, n:n, got:got, total:dots.length};
+  }
+
+  function tkScoreColor(v, alpha){
+    if (v === undefined) return "rgba(150,150,150,.22)";
+    if (v >= TK_SCALE_HI) return "rgba(212,91,182," + alpha + ")";
+    if (v < TK_SCALE_LO) return "rgba(140,232,240," + alpha + ")";
+    return "rgba(214,214,214," + alpha + ")";
+  }
+
+  function tkBar(counts, slice){
+    var bar = $("tk-stance-bar"), txt = $("tk-stance-txt");
+    if (!counts.got){ bar.innerHTML = ""; txt.textContent = tkEmpty(slice); return; }
+    var t = counts.got;
+    var py = 100 * counts.y / t, pm = 100 * counts.m / t, pn = 100 - py - pm;
+    bar.innerHTML = "<i class='y' style='width:" + py + "%'></i>"
+                  + "<i class='m' style='width:" + pm + "%'></i>"
+                  + "<i class='n' style='width:" + pn + "%'></i>";
+    txt.innerHTML = "<b>" + counts.y + " 支持</b> · " + counts.m + " 无所谓 · "
+                  + counts.n + " 反对";
+    bar.title = counts.y + " 支持 / " + counts.m + " 无所谓 / " + counts.n + " 反对"
+              + "（这一段共 " + counts.got + " 个人有分数）";
+  }
+
+  // How wide the "57 / 662 / 137" column has to be, in characters.
+  //
+  // This is sized once, off the roster, and never moves -- sizing it per frame
+  // made the bars change length as the sweep ran (57.8px in the 5th century BC,
+  // 87.9px at the end), which reads as the chart twitching while you scrub.
+  //
+  // The bound: a circle of N people splits into y + m + n = N, so no single
+  // number can have more digits than N does, and the row is "N / N / N" at
+  // worst -- 3 digits plus the two " / " separators. The widest circle is 西欧
+  // at 856, so 15 characters, and the real worst frame needs 14 ("168 / 634 /
+  // 54"). One character of slack buys a column that is stable everywhere,
+  // including for questions and rosters that have not been asked yet.
+  function tkCountWidth(){
+    if (TK.countCh !== undefined) return TK.countCh;
+    var by = {};
+    TK.plan.dots.forEach(function(t){ by[t.circle] = (by[t.circle] || 0) + 1; });
+    var widest = 0;
+    Object.keys(by).forEach(function(c){
+      widest = Math.max(widest, String(by[c]).length * 3 + 6);
+    });
+    TK.countCh = widest + 0.6;
+    return TK.countCh;
+  }
+
+  // Per culture, in the current century. Counts of people, not shares of a
+  // batch: a person is one person, and nothing here sums to 100% across
+  // cultures the way a probability distribution would.
+  function tkCultures(dots, slice){
+    var by = {};
+    dots.forEach(function(t){
+      var v = TK.scored[t.id];
+      if (v === undefined) return;
+      var c = t.circle;
+      if (!by[c]) by[c] = {y:0, m:0, n:0};
+      if (v >= TK_SCALE_HI) by[c].y += 1;
+      else if (v < TK_SCALE_LO) by[c].n += 1;
+      else by[c].m += 1;
+    });
+    var rows = Object.keys(by).sort(function(a, b){
+      var sa = by[a].y + by[a].m + by[a].n, sb = by[b].y + by[b].m + by[b].n;
+      return sb - sa || (a < b ? -1 : 1);
+    });
+    if (!rows.length){
+      $("tk-spec").innerHTML = "<div class='small muted'>" + esc(tkEmpty(slice)) + "</div>";
+      return;
+    }
+    $("tk-spec").style.setProperty("--tk-cc", tkCountWidth() + "ch");
+    $("tk-spec").innerHTML = rows.map(function(c){
+      var d = by[c], t = d.y + d.m + d.n;
+      var py = 100 * d.y / t, pm = 100 * d.m / t, pn = 100 - py - pm;
+      return "<div class='tk-crow' title='" + esc(tkCircleLabel(c)) + " · " + t
+           + " 个人：支持 " + d.y + " / 无所谓 " + d.m + " / 反对 " + d.n + "'>"
+           + "<span class='cn'>" + esc(tkCircleLabel(c)) + "</span>"
+           + "<span class='cb'><i class='y' style='width:" + py + "%'></i>"
+           + "<i class='m' style='width:" + pm + "%'></i>"
+           + "<i class='n' style='width:" + pn + "%'></i></span>"
+           + "<span class='cc'>" + d.y + " / " + d.m + " / " + d.n + "</span></div>";
+    }).join("");
+  }
+
+  function tkChip(t, cls){
+    var v = TK.scored[t.id];
+    var inner = esc(t.zh)
+      + (t.en && t.en !== t.zh ? " <span class='tk-en'>" + esc(t.en) + "</span>" : "")
+      + "<b>" + v.toFixed(2) + "</b>";
+    var title = esc((t.en || t.zh) + " · " + tkYearNote(t) + " · " + v.toFixed(2));
+    return t.url
+      ? "<a class='tk-chip " + cls + "' href='" + esc(t.url) + "' target='_blank'"
+        + " rel='noopener' title='" + title + "'>" + inner + "</a>"
+      : "<span class='tk-chip " + cls + " plain' title='" + title + "'>" + inner + "</span>";
+  }
+
+  function tkExtremes(dots, slice){
+    var scored = dots.filter(function(t){ return TK.scored[t.id] !== undefined; });
+    if (!scored.length){
+      $("tk-pick").innerHTML = "<div class='small muted'>" + esc(tkEmpty(slice)) + "</div>";
+      $("tk-chips").innerHTML = "";
+      $("tk-pick-right").textContent = "—";
+      return;
+    }
+    scored.sort(function(a, b){
+      return TK.scored[b.id] - TK.scored[a.id] || a.end_year - b.end_year
+          || (a.id < b.id ? -1 : 1);
+    });
+    var hi = scored[0], lo = scored[scored.length - 1];
+    $("tk-pick").innerHTML =
+      "<div class='tk-pk'><span class='lb do'>最支持</span>"
+      + tkName(hi.zh, hi.en, hi.url, true)
+      + "<span class='sc'>" + TK.scored[hi.id].toFixed(2) + "</span></div>"
+      + (scored.length < 2
+          // One person cannot be both ends. Saying so beats printing the same
+          // name twice under two opposite labels.
+          ? "<div class='small muted' style='margin-top:6px'>这一段只有一个人有分数</div>"
+          : "<div class='tk-pk'><span class='lb dont'>最反对</span>"
+            + tkName(lo.zh, lo.en, lo.url, true)
+            + "<span class='sc'>" + TK.scored[lo.id].toFixed(2) + "</span></div>");
+    var head = scored.slice(0, 6), tail = scored.slice(-6).reverse();
+    $("tk-chips").innerHTML =
+      head.map(function(t){ return tkChip(t, "do"); }).join("")
+      + "<span class='tk-gap'>vs</span>"
+      + tail.map(function(t){ return tkChip(t, "dont"); }).join("");
+    $("tk-pick-right").textContent = scored.length + " 个人有分数";
+  }
+
+  // One position, fully drawn. Everything here reads from TK.scored, which is
+  // the noul ruler -- so the map, the bar, the culture rows and the chips are
+  // four views of one measurement instead of four different ones.
+  function tkShow(pos, year){
+    if (!TK.bins.length) return;
+    var slice = tkSlice(pos), counts = tkTally(slice.dots);
+    var last = pos >= TK.bins.length;
+    tkMap(pos, year);
+    tkBar(counts, slice);
+    tkCultures(slice.dots, slice);
+    tkExtremes(slice.dots, slice);
+    $("tk-year").textContent = last ? "全部历史"
+      : (year === null || year === undefined ? slice.label
+         : (year < 0 ? "前 " + (-year) : String(year)));
+    $("tk-frame-label").textContent = slice.label;
+    $("tk-bar-label").textContent = last ? "全部历史" : slice.label;
+    $("tk-bar-right").textContent = "第 " + (pos + 1) + " / " + (TK.bins.length + 1)
+      + " 格 · " + counts.got + " / " + counts.total + " 人有分数";
+    $("tk-spec-right").textContent = counts.got + " 人有分数" + (last ? " · 全部" : "");
+    // The slider follows the playhead during the sweep instead of sitting at
+    // zero: a scrubber frozen at the left while the map walks forward reads as
+    // broken, disabled or not.
+    $("tk-range").value = String(pos);
+    $("tk-pick-label").textContent = last ? "全人类的两头" : "这一百年的两头";
+    tkScrubText();
+  }
+
+  function tkScrubText(){
+    var last = TK.pos >= TK.bins.length;
+    $("tk-scrub-c").textContent = last ? "全部历史"
+      : tkSpanLabel(TK.bins[TK.pos].lo, TK.bins[TK.pos].hi);
+  }
+
+
+  function tkName(zh, en, url, bold){
+    var label = esc(zh || "—")
+      + (en && en !== zh ? " <span class='tk-en'>" + esc(en) + "</span>" : "");
+    if (!url) return bold ? "<b>" + label + "</b>" : label;
+    return "<a class='tk-a' href='" + esc(url) + "' target='_blank' rel='noopener'"
+         + " title='" + esc(en || zh || "") + " · Wikipedia'>"
+         + (bold ? "<b>" + label + "</b>" : label) + "</a>";
+  }
+
+
+
+  function tkPlay(){
+    if (!TK.bins.length || TK.playing) return;
+    tkStop();
+    TK.playing = true;
+    TK.done = false;
+    TK.pos = 0;
+    $("tk-replay").disabled = true;
+    $("tk-range").disabled = true;
+    $("tk-out").classList.remove("hidden");
+    var pos = 0, frac = 0, last = performance.now();
+    var finish = function(){
+      TK.playing = false; TK.done = true;
+      TK.pos = TK.bins.length;
+      $("tk-range").value = String(TK.pos);
+      $("tk-range").disabled = false;
+      $("tk-replay").disabled = false;
+      tkShow(TK.pos, null);
+      tkScalePanel();
+      tkScaleMaybe();
+    };
+    var tick = function(now){
+      if (!TK.playing) return;
+      // A tab that was hidden must not come back and jump a thousand years.
+      var dt = Math.min(now - last, 400);
+      last = now;
+      var canReach = Math.min(tkFrontier(), TK.bins.length);
+      frac += dt / TK_MS_PER_BIN;
+      while (frac >= 1 && pos < canReach){ pos += 1; frac -= 1; }
+      TK.pos = pos;
+      if (pos >= TK.bins.length){ finish(); return; }
+      if (pos < canReach){
+        var bin = TK.bins[pos];
+        tkShow(pos, Math.round(bin.lo + (bin.hi - bin.lo) * Math.min(frac, 1)));
+      } else {
+        // Caught up with the answers. Hold here and say so, rather than
+        // finishing early or freezing without explanation.
+        tkShow(pos, TK.bins[pos].hi);
+        $("tk-bar-label").textContent = "还在问第 " + (pos + 1) + " 段…";
+      }
+      TK.raf = requestAnimationFrame(tick);
+    };
+    tkShow(0, TK.bins[0].lo);
+    TK.raf = requestAnimationFrame(tick);
+  }
+
+
+  function tkStart(){
+    var q = $("q").value.trim();
+    if (q.length < 2){
+      var b = $("ask-err");
+      b.innerHTML = "<b>先说一件你在纠结的事</b><br><span class='muted'>上面那句话会原样拿去问思想者</span>";
+      b.classList.remove("hidden");
+      return;
+    }
+    show("thinkers");
+    tkRun(q);
+  }
+
+  // Everything after "we have a question": the same path for the first run and
+  // for a re-run on a different ruler, so a swapped rung cannot take a subtly
+  /* The question as the 0-1 scale reads it: "你支持 X 吗？".
+
+     The roster is scored on "does this framework point at 做 or 不做", and the
+     panel labels 1 as 最支持. A question typed as "人类要成为一个星际文明吗？"
+     leaves X implicit, and an implicit X makes every number under it unreadable:
+     support for WHAT. This asks DeepSeek to name X, once, in its own request --
+     it is one short call with no roster in it, so it lands long before eleven
+     Jev requests do.
+
+     It never blocks: until the answer arrives the reader sees their own words,
+     and if the call fails they keep seeing their own words. */
+  function tkFrame(q){
+    // Swapping an anchor re-runs the whole thing for the SAME question, so the
+    // restatement is already known. Re-asking would be a paid call that cannot
+    // change a word: it is one request out of twelve either way, but it is the
+    // one that is pure waste.
+    // Only a run that HAS a restatement skips the call. A failed one re-asks on
+    // the next run rather than keeping the failure forever.
+    if (TK.frameFor === q && TK.frameP && TK.frame && TK.frame !== q){
+      tkFramePaint();
+      return TK.frameP;
+    }
+    TK.frameFor = q;
+    TK.frame = q;
+    TK.frameEn = "";
+    $("tk-q-text").textContent = q;
+    $("tk-q-text").title = q;
+    $("tk-q-raw").textContent = "";
+    $("tk-q-raw").title = "";
+    // The promise is returned, not just stored, because the run below has to
+    // wait for the English half of it. It resolves to the two sentences, or to
+    // null if the call failed -- and it carries its own contents rather than
+    // reading TK at the end, so a second question that starts while this is in
+    // flight cannot hand its own restatement to this run.
+    TK.frameP = fetch("/api/thinkers/frame", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({question: q})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      // A second question may have started while this was in flight; its own
+      // call will paint, and this one must not paint over it.
+      if (TK.question !== q) return null;
+      var f = (d && d.frame) || "";
+      var en = (d && d.frame_en) || "";
+      if (en) TK.frameEn = en;
+      if (f && f !== q) TK.frame = f;
+      tkFramePaint();
+      return {frame: TK.frame, en: en};
+    }).catch(function(){ return null; });
+    return TK.frameP;
+  }
+
+  function tkFramePaint(){
+    var q = TK.frame || TK.question;
+    $("tk-q-text").textContent = q;
+    $("tk-q-text").title = q;
+    var raw = (q && q !== TK.question) ? "原话：" + TK.question : "";
+    $("tk-q-raw").textContent = raw;
+    $("tk-q-raw").title = raw;
+    // The English line is painted from the run's own meta line, not from here:
+    // what has to be visible is the sentence the nouls were actually given, and
+    // a run that started without it must not show one afterwards.
+    var en = (TK.scale && TK.scale.stateEn) || "";
+    $("tk-q-en").textContent = en ? "英文题干：" + en : "";
+    $("tk-q-en").title = en;
+  }
+
+  // different route through the page than the shipped twelve did.
+  function tkRun(q){
+    $("ask-err").classList.add("hidden");
+    tkReset();
+    // Kept so the map and the verdict can both say what they are about. The
+    // verdict is generated from numbers and changes with the century, so it has
+    // no fixed text that could carry the question for it.
+    TK.question = q;
+    var frameP = tkFrame(q);
+    // The ruler IS the animation now, so there is only one request to wait on.
+    tkScale(q, frameP);
+    tkPlan().then(function(){
+      TK.bins = tkCenturies();
+      TK.frontier = null;
+      $("tk-range").max = String(TK.bins.length);
+      $("tk-range").value = "0";
+      $("tk-bar-right").textContent = TK.bins.length + " 段 · 每段 100 年";
+      TK.planReady = true;
+      tkCountdown(function(){ TK.countdownDone = true; tkMaybeStart(); });
+    }).catch(function(){
+      $("tk-bar-label").textContent = "名录没加载出来";
+      fail($("tk-err"), {ok:false, status:0, data:{error:"拿不到思想者名录", hint:"刷新一下"}});
+    });
+  }
+
+  function tkMaybeStart(){
+    if (!TK.planReady || !TK.countdownDone || TK.playing || TK.done) return;
+    tkPlay();
+  }
+
+
+
+  /* ===================== The anchors are the reader's ===================== */
+  // Twelve is the shipped default, not the design: what makes the anchors work
+  // is that EVERY chunk carries the SAME people, and any set of roster members
+  // does that. 24 is a cap, not a rule -- every anchor is one fewer seat for the
+  // rest of the roster inside a 255-option request.
+  var TK_PICK_MAX = 24;
+  var TK_PICK_KEY = "ask_great_thinkers.anchors";
+
+  // Kept in the browser, not on the server: this picks people out of a roster
+  // the server already has, so there is nothing to save that the server cannot
+  // derive -- and nothing here is a secret worth a 0600 file.
+  function tkPickStore(ids){
+    try {
+      if (ids) localStorage.setItem(TK_PICK_KEY, JSON.stringify(ids));
+      else localStorage.removeItem(TK_PICK_KEY);
+    } catch (e) {}   // a locked-down browser must not break the run
+  }
+
+  // A stored id can be gone: the roster is rebuilt from Wikidata, and a person
+  // who loses their framework sentence stops being askable. Dropping the dead
+  // ones beats sending an id the server will refuse -- the reader gets a
+  // slightly smaller set, not an error they cannot act on.
+  function tkPickStored(plan){
+    var raw = null;
+    try { raw = localStorage.getItem(TK_PICK_KEY); } catch (e) { return null; }
+    if (!raw) return null;
+    var ids;
+    try { ids = JSON.parse(raw); } catch (e) { return null; }
+    if (!Array.isArray(ids)) return null;
+    var have = {};
+    (plan && plan.dots || []).forEach(function(t){ have[t.id] = 1; });
+    var kept = [];
+    ids.forEach(function(id){ if (have[id] && kept.indexOf(id) < 0) kept.push(id); });
+    return kept.length ? kept : null;
+  }
+
+  function tkPickIsDefault(){
+    var ship = ((TK.plan && TK.plan.anchors) || []).map(function(a){ return a.id; });
+    var mine = TK.anchorIds || [];
+    return ship.length === mine.length
+        && ship.every(function(id, i){ return id === mine[i]; });
+  }
+
+  // A set, not a list: moving a name up or down changes the request, but not
+  // whose readings these are, and flagging that as "needs a re-run" would be a
+  // false alarm every time a reader reorders their own chips.
+  function tkAnchorKey(ids){
+    return (ids || []).slice().sort().join(",");
+  }
+
+  // Are the numbers on screen from a different ruler than the one on the
+  // button? `anchorIdsRun` is what the last run actually asked with, recorded
+  // when the request goes out rather than read back out of the response,
+  // because the panel is allowed to be showing a run that is still in flight.
+  function tkStale(){
+    if (!TK.question || !TK.anchorIdsRun || !TK.anchorIdsRun.length) return false;
+    return tkAnchorKey(TK.anchorIdsRun) !== tkAnchorKey(TK.anchorIds);
+  }
+
+  function tkPickLabel(){
+    var n = (TK.anchorIds || []).length;
+    $("tk-anchors").textContent = "锚点 " + n + " 人"
+      + (n && !tkPickIsDefault() ? " · 自定义" : "")
+      + (tkStale() ? " · 待重跑" : "");
+  }
+
+  // Name the difference, not the size. Swapping one person for another leaves
+  // the count at twelve, and "changed to 12 people, measured with 12 people" is
+  // a sentence that tells the reader nothing -- the same trap the old chips row
+  // had, where 12 = 12 looked like no change at all.
+  function tkNameList(ids){
+    var name = function(id){
+      var t = TK.byId[id];
+      return (t && (t.zh || t.en)) || id;
+    };
+    var shown = ids.slice(0, 4).map(name).join("、");
+    return ids.length > 4 ? shown + " 等 " + ids.length + " 个" : shown;
+  }
+
+  function tkStalePaint(){
+    var on = tkStale(), box = $("tk-stale");
+    if (on){
+      var inRun = {}, inNow = {};
+      (TK.anchorIdsRun || []).forEach(function(id){ inRun[id] = 1; });
+      (TK.anchorIds || []).forEach(function(id){ inNow[id] = 1; });
+      var added = (TK.anchorIds || []).filter(function(id){ return !inRun[id]; });
+      var dropped = (TK.anchorIdsRun || []).filter(function(id){ return !inNow[id]; });
+      var bits = [];
+      if (added.length) bits.push("<b>加 " + esc(tkNameList(added)) + "</b>");
+      if (dropped.length) bits.push("<b>去掉 " + esc(tkNameList(dropped)) + "</b>");
+      $("tk-stale-txt").innerHTML = "锚点已改（" + bits.join("、") + "）。"
+        + "但下面这些数字还是按上一批锚点跑出来的 —— 换人就是换尺子，"
+        + "要用新的这组 <b>" + (TK.anchorIds || []).length + " 人</b> 重问一遍才算数。";
+    }
+    if (box) box.classList.toggle("hidden", !on);
+    if ($("tk-rerun")) $("tk-rerun").disabled = !TK.question;
+    tkPickLabel();
+  }
+
+  function tkPickOpen(){
+    if (!TK.plan || !TK.plan.dots) return;
+    TK.pickDraft = (TK.anchorIds || []).slice();
+    $("tk-pick-q").value = "";
+    tkPickRender();
+    $("tk-picker").classList.remove("hidden");
+    $("tk-pick-q").focus();
+  }
+
+  function tkPickClose(){ $("tk-picker").classList.add("hidden"); }
+
+  // English names carry diacritics nobody types -- Kaṇāda, Kumārila Bhaṭṭa,
+  // Ngũgĩ wa Thiong'o. Folding them means "kanada" finds 迦那陀; without this
+  // the only way to search an English name is to already know how it is spelled.
+  function tkFold(s){
+    return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  // Three ways to reach a person, because there are three ways to know a name:
+  // the characters (迦那陀), the romanisation a Chinese keyboard produces
+  // (jianatuo, or the initials jnt), and the English spelling (Kanada). The
+  // pinyin index comes from the server -- see thinkers.pinyin_of() -- so the
+  // page never has to romanise anything itself.
+  //
+  // Scored rather than merely matched, because filtering alone was wrong at
+  // two letters: "nc" is 尼采's initials, and it is also a substring of
+  // Mencius, Confucius, Nietzsche's own English name -- so the first 60 in
+  // roster order were everyone EXCEPT the person being looked for. The scores
+  // put the kinds of match a reader means first: the whole name, then one whole
+  // search form, then a prefix, then anywhere at all.
+  function tkScore(t, q, qflat){
+    if (t.zhf === q || t.enf === q) return 4;
+    if (qflat && (" " + (t.py || "") + " ").indexOf(" " + qflat + " ") >= 0) return 3;
+    if (t.zhf.indexOf(q) === 0 || t.enf.indexOf(q) === 0) return 2;
+    if (qflat && t.pyp.indexOf(qflat) === 0) return 2;
+    if (t.zhf.indexOf(q) >= 0 || t.enf.indexOf(q) >= 0) return 1;
+    return (qflat && t.pyf.indexOf(qflat) >= 0) ? 1 : 0;
+  }
+
+  function tkPickRender(){
+    var draft = TK.pickDraft || [], on = {};
+    draft.forEach(function(id){ on[id] = 1; });
+    $("tk-pick-n").textContent = draft.length;
+    $("tk-pick-cur").innerHTML = draft.length
+      ? draft.map(function(id){
+          var t = TK.byId[id] || { zh:id, en:"" };
+          return "<span class='tk-pick-chip'>" + esc(t.zh)
+               + "<button data-drop='" + esc(id) + "' title='从锚点上拿掉'>\u00d7</button></span>";
+        }).join("")
+      : "<span class='tk-pick-hint'>锚点是空的 —— 至少要留一个人。</span>";
+
+    var q = tkFold(($("tk-pick-q").value || "").trim()), list = $("tk-pick-list");
+    if (!q){
+      list.innerHTML = "";
+      list.style.display = "none";
+      $("tk-pick-hint").textContent =
+        "输入名字开始搜：中文、拼音、英文都行。只能从名录里选。";
+      return;
+    }
+    // The whole roster is scanned, not just up to the 60th hit: stopping at 60
+    // is what made a ranked search impossible.
+    var qflat = q.replace(/[\s·]+/g, ""), found = [];
+    for (var i = 0; i < TK.plan.dots.length; i++){
+      var t = TK.plan.dots[i], sc = tkScore(t, q, qflat);
+      if (sc) found.push([sc, i, t]);
+    }
+    found.sort(function(a, b){ return b[0] - a[0] || a[1] - b[1]; });
+    var total = found.length;
+    var hits = found.slice(0, 60).map(function(row){ return row[2]; });
+    list.style.display = hits.length ? "grid" : "none";
+    list.innerHTML = hits.map(function(t){
+      return "<button data-add='" + esc(t.id) + "'" + (on[t.id] ? " class='on'" : "") + ">"
+           + esc(t.zh) + "<span class='en'>" + esc(t.en || "") + "</span></button>";
+    }).join("");
+    $("tk-pick-hint").textContent = hits.length
+      ? "点一下加进锚点，再点一下拿掉。" + (total > hits.length ? "（" + total + " 个匹配，只显示前 60 个，多打几个字收窄）" : "")
+      : "名录里没有匹配的名字。";
+  }
+
+  function tkPickToggle(id){
+    var d = TK.pickDraft || (TK.pickDraft = []), i = d.indexOf(id);
+    if (i >= 0) d.splice(i, 1);
+    else if (d.length >= TK_PICK_MAX) return;
+    else d.push(id);
+    tkPickRender();
+  }
+
+  // Two actions, because they are two different things. Choosing the people is
+  // free and reversible; measuring them is eleven requests. So 确认 records the
+  // set and stops -- the panel then says, in the one place the reader is
+  // already looking, that its numbers came from a different ruler, and offers
+  // the run. `run` is the shortcut for the reader who already knows they want
+  // the new readings.
+  function tkPickApply(run){
+    var d = (TK.pickDraft || []).slice();
+    if (!d.length) return;
+    TK.anchorIds = d;
+    // Applying the shipped twelve means "default" again, and the way back to
+    // default has to survive a reload too -- so it clears rather than stores.
+    tkPickStore(tkPickIsDefault() ? null : d);
+    tkPickClose();
+    tkStalePaint();
+    if (run && TK.question) tkRun(TK.question);
+  }
+
+  $("tk-anchors").onclick = tkPickOpen;
+  $("tk-pick-cancel").onclick = tkPickClose;
+  $("tk-pick-ok").onclick = function(){ tkPickApply(false); };
+  $("tk-pick-go").onclick = function(){ tkPickApply(true); };
+  $("tk-rerun").onclick = function(){ if (TK.question) tkRun(TK.question); };
+  $("tk-stale-go").onclick = function(){ if (TK.question) tkRun(TK.question); };
+  $("tk-pick-reset").onclick = function(){
+    TK.pickDraft = ((TK.plan && TK.plan.anchors) || []).map(function(a){ return a.id; });
+    tkPickRender();
+  };
+  $("tk-pick-q").oninput = tkPickRender;
+  $("tk-pick-q").onkeydown = function(e){
+    // Enter is the cheap one on purpose: confirming is undoable and running
+    // costs money, so the keystroke with the least ceremony must not be the
+    // one that spends.
+    if (e.key === "Enter"){ e.preventDefault(); tkPickApply(false); }
+    else if (e.key === "Escape") tkPickClose();
+  };
+  $("tk-pick-cur").onclick = function(e){
+    var b = e.target.closest ? e.target.closest("button[data-drop]") : null;
+    if (b) tkPickToggle(b.getAttribute("data-drop"));
+  };
+  $("tk-pick-list").onclick = function(e){
+    var b = e.target.closest ? e.target.closest("button[data-add]") : null;
+    if (b) tkPickToggle(b.getAttribute("data-add"));
+  };
+  $("tk-picker").onclick = function(e){ if (e.target === this) tkPickClose(); };
+
+
+
+  /* ================= The whole roster, on one ruler ================= */
+  // Beside the sweep, from its own endpoint. Kept in its own state slot on
+  // purpose: none of these numbers is a share of a batch, and mixing them with
+  // the frame shares above is exactly the bug this panel exists to fix.
+  var TK_SCALE_N = 10;      // how many names per column
+  var TK_SCALE_HI = 0.60;   // >= this and the framework points at "do it"
+  var TK_SCALE_LO = 0.40;   // <  this and it points at "don't"
+
+  function tkAbortScale(){
+    if (TK.scale.ctl){ try { TK.scale.ctl.abort(); } catch (e) {} }
+    TK.scale.ctl = null;
+  }
+
+  // How long a run waits for the English restatement before asking anyway. The
+  // state is what the eleven Jev requests are judged over, so it has to be
+  // final before they go out -- but a slow DeepSeek must never hold eleven paid
+  // requests hostage. Five seconds is longer than that call takes when it works
+  // and shorter than the eleven chunks it feeds.
+  var TK_FRAME_WAIT = 5000;
+
+  function tkBeforeFrame(frameP){
+    return new Promise(function(resolve){
+      var settled = false, timer = 0;
+      var finish = function(en){
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(en || "");
+      };
+      // The deadline reads the current value rather than one captured at the
+      // start: a restatement that lands in the last millisecond is one this run
+      // can still use.
+      timer = setTimeout(function(){ finish(TK.frameEn); }, TK_FRAME_WAIT);
+      if (frameP && frameP.then) frameP.then(function(v){ finish(v && v.en); },
+                                             function(){ finish(""); });
+      else finish(TK.frameEn);
+    });
+  }
+
+  function tkScale(q, frameP){
+    // A whole new object, and every message below is gated on identity: a new
+    // question replaces TK.scale, and the old stream's late lines must land on
+    // the floor rather than paint a stale ruler under the new run.
+    var st = {scores:null, answered:0, roster:0, usage:null, error:null,
+              done:false, ctl:null, chunks:0, total:0, calibration:null,
+              repeats:0, measurements:0, reused:0, saved:null, stateEn:""};
+    TK.scale = st;
+    if (typeof AbortController === "function") st.ctl = new AbortController();
+    var msg = function(m){ if (TK.scale === st) tkScaleMsg(m); };
+
+    // The nouls are asked in English, every one of them says "support it", and
+    // none of them says what "it" is -- the naming lives in the state, so the
+    // restatement is on the critical path of this run rather than decoration.
+    tkBeforeFrame(frameP).then(function(en){
+      // A newer run may have taken the screen while this one waited. Sending it
+      // now would pay for a run nobody is watching.
+      if (TK.scale !== st) return;
+      // What this run is actually asking with, snapshotted in the same breath
+      // as the body so the banner and the request cannot disagree.
+      var rungs = TK.anchorIds ? TK.anchorIds.slice() : null;
+      TK.anchorIdsRun = rungs || [];
+      tkStalePaint();
+      var init = {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        // null means "the shipped twelve" -- the server owns that default, so
+        // the page never has to know what it is before the plan arrives.
+        body:JSON.stringify({question:q, anchors:rungs, frame_en:en})
+      };
+      if (st.ctl) init.signal = st.ctl.signal;
+
+      fetch("/api/thinkers/scale", init).then(function(r){
+        if (!r.ok || !r.body){
+          return r.json().catch(function(){ return {}; }).then(function(d){
+            throw new Error(d.error || d.detail || ("HTTP " + r.status));
+          });
+        }
+        var reader = r.body.getReader(), dec = new TextDecoder(), buf = "";
+        var pump = function(){
+          return reader.read().then(function(res){
+            if (res.done){ msg({type:"done"}); return; }
+            buf += dec.decode(res.value, {stream:true});
+            var nl;
+            while ((nl = buf.indexOf("\n")) >= 0){
+              var text = buf.slice(0, nl);
+              buf = buf.slice(nl + 1);
+              if (!text.trim()) continue;
+              try { msg(JSON.parse(text)); }
+              catch (e) { msg({type:"error", error:"这一路有一行读不懂"}); }
+            }
+            return pump();
+          });
+        };
+        return pump();
+      }).catch(function(e){
+        if (e && e.name === "AbortError") return;
+        msg({type:"error", error:String(e && e.message || e)});
+      });
+    });
+  }
+
+  function tkScaleMsg(m){
+    var s = TK.scale;
+    if (m.type === "meta"){
+      s.total = m.total; s.roster = m.roster;
+      s.measurements = m.measurements || 0;
+      // The English the run was actually judged over, straight off the wire.
+      // Not read back from the restatement call above: a run that started
+      // before that call answered was judged on the reader's words alone, and
+      // showing an English sentence here would claim a prompt that never went
+      // out.
+      s.stateEn = (m.state && m.state.the_same_decision_in_english) || "";
+      tkFramePaint();
+    } else if (m.type === "progress"){
+      s.answered = m.answered; s.chunks = m.done; s.total = m.total;
+      // Each chunk now ships its own scores, so a century can be shown the
+      // moment it is complete instead of at the end of the run. The first
+      // reading of a person wins here; the final line replaces all of it with
+      // the averaged value, which is the one the panel reports.
+      if (m.scores){
+        for (var k in m.scores){
+          if (m.scores.hasOwnProperty(k) && TK.scored[k] === undefined){
+            TK.scored[k] = m.scores[k];
+          }
+        }
+        TK.frontier = null;
+      }
+    } else if (m.type === "scale"){
+      s.scores = m.scores; s.answered = m.answered;
+      s.roster = m.roster; s.usage = m.usage; s.chunks = m.chunks;
+      s.calibration = m.calibration || null;
+      s.repeats = m.repeats || 0;
+      s.reused = m.reused || 0; s.saved = m.saved || null;
+      // The averaged values are the truth; the per-chunk ones were only there
+      // to keep the sweep moving.
+      TK.scored = m.scores || TK.scored;
+      TK.frontier = null;
+    } else if (m.type === "done"){
+      s.done = true;
+    } else if (m.type === "error"){
+      s.error = m.error;
+    }
+    tkScaleMaybe();
+  }
+
+  /* The panel is a claim about all of humanity, so it is not allowed on screen
+     before the animation that asked the question has finished. After that it
+     shows whatever is true at that moment -- done, still running, or failed --
+     instead of a "判完了" bar over an empty box. */
+  function tkScaleMaybe(){
+    if (!TK.done) return;
+    var s = TK.scale;
+    if (!s) return;
+    $("tk-scale-win").classList.remove("hidden");
+    if (s.scores && s.answered) tkScalePanel();
+    else if (s.error) tkScaleFail(s.error);
+    else tkScaleProgress();
+  }
+
+  function tkScaleProgress(){
+    var s = TK.scale;
+    $("tk-verdict").innerHTML = "";
+    var tot = s.roster || (s.total ? s.total * 255 : 0);
+    $("tk-scale-right").textContent = "已判 " + s.answered + " / " + (tot || "…");
+    $("tk-scale-note").innerHTML =
+      "正在问完整个名录 —— <b>每批 255 人（其中 12 个人每批都在，用来对齐各批）"
+      + "，每人正反两个方向各一遍</b>"
+      + (s.total ? "，第 " + (s.chunks || 0) + " / " + s.total + " 批。" : "。")
+      + "<br>现在收回来的是逐批的分数，齐了这里换成三张名单。上面的动画不必等它。";
+  }
+
+  function tkScaleFail(err){
+    $("tk-verdict").innerHTML = "";
+    $("tk-scale-right").textContent = "没排出来";
+    $("tk-scale-note").innerHTML =
+      "<b>这一路没回来</b><br>" + esc(String(err))
+      + "<br>上面那几帧照旧算数 —— 这一路是另外加问的，没回来不代表没有答案。";
+  }
+
+  function tkYearNote(t){
+    if (!t) return "";
+    if (!t.died) return "在世";
+    return t.died < 0 ? ("前 " + (-t.died)) : String(t.died);
+  }
+
+  function tkScaleYearOf(id){
+    var t = TK.byId[id];
+    return t ? (t.end_year || 0) : 0;
+  }
+
+  function tkScaleRow(r){
+    var t = TK.byId[r.id] || { zh:r.id, en:"" };
+    return "<li><span class='nm'>" + tkName(t.zh, t.en, t.url) + "</span>"
+         + "<span class='er'>" + esc(tkYearNote(t)) + "</span>"
+         + "<span class='sc'>" + r.v.toFixed(2) + "</span></li>";
+  }
+
+  /* Ten names at 1.00 out of three hundred people at 1.00 would read as "these
+     ten are the most in favour". The tie is stated instead of hidden: the extra
+     row is the honest half of the list. */
+  function tkScaleListHtml(list, all){
+    var html = list.map(tkScaleRow).join("");
+    var last = list[list.length - 1].v;
+    var tied = 0, shown = 0;
+    all.forEach(function(r){ if (r.v === last) tied += 1; });
+    list.forEach(function(r){ if (r.v === last) shown += 1; });
+    if (tied > shown){
+      html += "<li><span class='nm' style='color:var(--dim)'>…另有 "
+            + (tied - shown) + " 个人同样 " + last.toFixed(2) + "</span></li>";
+    }
+    return html;
+  }
+
+  /* The anchors, named where they landed. Everything else in this panel is one
+     number per person; this is the only part that says whether eleven separate
+     requests are entitled to be read as one scale, and it says it with a
+     measurement instead of a promise. */
+  var TK_LAB_ROW = 15;   // px per stagger row
+  var TK_LAB_GAP = 7;    // px of air demanded between two neighbours on a row
+  var TK_LAB_DROP = 5;   // px between the histogram's baseline and row 0
+
+  function tkAnchorRow(){
+    var box = $("tk-anchor-row");
+    if (!box) return;
+    var cal = TK.scale.calibration;
+    var last = TK.bins.length > 0 && TK.pos >= TK.bins.length;
+    if (!last || !cal || !cal.rungs || !cal.rungs.length){
+      box.innerHTML = ""; box.style.height = "0px"; return;
+    }
+    var rungs = cal.rungs.slice().sort(function(a, b){ return a.mean - b.mean; });
+    box.innerHTML = rungs.map(function(r){
+      return "<span data-x='" + Math.max(0, Math.min(1, r.mean)).toFixed(5) + "' title='"
+           + esc(r.zh || r.id) + " " + r.mean.toFixed(2) + " · 被问了 " + r.n + " 次："
+           + r.min.toFixed(2) + "–" + r.max.toFixed(2)
+           + "（差 " + (r.max - r.min).toFixed(2) + "）'>"
+           + esc(r.zh || r.id) + "</span>";
+    }).join("");
+
+    var labs = [].slice.call(box.children), W = box.clientWidth;
+    if (!W) return;   // the panel is display:none until the first frame lands
+    var reach = [], geo = [], maxRow = 0, h = 13;
+    labs.forEach(function(el, i){
+      var w = el.offsetWidth, put = rungs[i];
+      h = el.offsetHeight || 13;
+      // Centre on the number, then keep the whole word inside the panel: at
+      // 0.02 or 0.98 a centred label would hang over the edge, and a clipped
+      // name is worse than one nudged a few pixels off its own tick.
+      var cx = Math.max(0, Math.min(1, put.mean)) * W;
+      var left = Math.max(0, Math.min(W - w, cx - w / 2));
+      var rx = left + w;
+      var row = 0;
+      while (row < reach.length && left < reach[row] + TK_LAB_GAP) row += 1;
+      reach[row] = rx;
+      geo.push({left: left, row: row, cx: cx, w: w});
+      if (row > maxRow) maxRow = row;
+    });
+    geo.forEach(function(g, i){
+      var el = labs[i];
+      el.style.left = (g.left + g.w / 2).toFixed(1) + "px";
+      el.style.top = (TK_LAB_DROP + g.row * TK_LAB_ROW).toFixed(1) + "px";
+    });
+    // A hairline from each tick down to its own name. Without it, row 2 is a
+    // word floating under the wrong number.
+    var leads = geo.map(function(g){
+      return "<i style='left:" + g.cx.toFixed(1) + "px;height:"
+           + (TK_LAB_DROP + g.row * TK_LAB_ROW).toFixed(1) + "px'></i>";
+    }).join("");
+    box.insertAdjacentHTML("afterbegin", leads);
+    box.style.height = (TK_LAB_DROP + maxRow * TK_LAB_ROW + h + 2) + "px";
+  }
+
+  function tkScaleRungs(cal){
+    var note = $("tk-scale-cal");
+    if (!cal || !cal.rungs || !cal.rungs.length){
+      tkAnchorRow();
+      note.textContent = (cal && cal.rung && cal.rung.n)
+        ? "这一轮没有重复测量，锚点没验成。" : "这一轮没有可用的锚点人。";
+      return;
+    }
+    var rung = cal.rung, rep = cal.repeat;
+    note.innerHTML = "这 <b>" + rung.n + " 个人</b>被放进每一批里各问一遍："
+      + "同一个人在不同批次里最大差 <b>" + rung.max_delta.toFixed(2)
+      + "</b>、平均差 <b>" + rung.mean_delta.toFixed(2) + "</b>。"
+      + (rep && rep.n
+          ? "另有 " + rep.n + " 个人被两批各测一次，最大差 <b>"
+            + rep.max_delta.toFixed(2) + "</b>。"
+          : "")
+      + "<br>这就是「分十几次问出来的人能放在一起比」的证据："
+      + "差是量出来的，不是我保证的。";
+  }
+
+  // Three lists on ONE scale. Every value is that person's own position on the
+  // same 0-1 scale, which is the only reason the columns can be read against
+  // each other -- see /api/thinkers/scale in server.py for why this is a noul
+  // and not a Choice.
+  /* Three lists for whatever the timeline is pointing at. At the
+     last stop that is all of history; anywhere else it is one century, and
+     "who was most in favour then" is answered by the same numbers instead of
+     needing a second run. */
+  /* The one sentence the animation was for.
+     Generated from the numbers, never written ahead of time: a fixed sentence
+     would be a lie the moment the question changed. What it has to survive is
+     the case this run actually landed in -- 74% of the roster in the middle and
+     a spread of 0.09 -- where the honest headline is "most of them have no
+     clear position", not a fake consensus. It also has to say that with the
+     same confidence as it would say "they agree", or the page is only capable
+     of reporting exciting questions. */
+  function tkVerdict(rows, last){
+    var box = $("tk-verdict");
+    var n = rows.length;
+    if (!n){ box.innerHTML = ""; return; }
+    var y = 0, m = 0, no = 0, mean = 0, i, r;
+    for (i = 0; i < n; i++){
+      r = rows[i];
+      if (r.v >= TK_SCALE_HI) y += 1;
+      else if (r.v < TK_SCALE_LO) no += 1;
+      else m += 1;
+      mean += r.v;
+    }
+    mean /= n;
+    var sd = 0;
+    for (i = 0; i < n; i++) sd += (rows[i].v - mean) * (rows[i].v - mean);
+    sd = Math.sqrt(sd / n);
+    var py = y / n, pm = m / n, pn = no / n;
+    var who = last ? "全人类" : "这一百年";
+    var pc = function(k){ return Math.round(100 * k / n); };
+
+    var head, body;
+    if (n < 8 && !last){
+      // Six people are not a distribution. Saying "多数赞成" about five of them
+      // is how a page ends up reporting a coin flip as a mandate.
+      head = "这一百年只有 " + n + " 个人，构不成一个分布。";
+      body = "下面是这几个人各自的位置。要谈「这一百年怎么看」，至少得先有一批人。";
+    } else if (pm >= 0.65){
+      head = who + "的思想家对这件事，多数没有明确指向。";
+      body = "<b>" + pc(m) + "%</b> 落在中间（" + TK_SCALE_LO.toFixed(2) + "–"
+           + TK_SCALE_HI.toFixed(2) + "），离散度只有 <b>" + sd.toFixed(2)
+           + "</b> —— 不是吵成两派，是几乎所有框架都挤在「说不清」那一带。"
+           + "真正指出方向的只有 <b>" + (y + no) + " 个人</b>（" + pc(y + no) + "%）"
+           // A ratio between 1-vs-1 is not a ratio. Only editorialise once
+           // both sides have enough people to mean something.
+           + (y >= 3 && no >= 3
+               ? "，其中赞成是反对的 <b>" + (y / no).toFixed(1) + " 倍</b>。"
+               : "。");
+    } else if (py >= 0.5){
+      head = who + "的思想家，多数赞成这件事。";
+      body = "<b>" + pc(y) + "%</b> 指向「做」，<b>" + pc(no) + "%</b> 指向「不做」，"
+           + "中间 <b>" + pc(m) + "%</b>；离散度 <b>" + sd.toFixed(2) + "</b>。";
+    } else if (pn >= 0.5){
+      head = who + "的思想家，多数反对这件事。";
+      body = "<b>" + pc(no) + "%</b> 指向「不做」，<b>" + pc(y) + "%</b> 指向「做」，"
+           + "中间 <b>" + pc(m) + "%</b>；离散度 <b>" + sd.toFixed(2) + "</b>。";
+    } else if (py >= 0.25 && pn >= 0.25){
+      head = who + "的思想家在这件事上是分裂的。";
+      body = "<b>" + pc(y) + "%</b> 支持、<b>" + pc(no) + "%</b> 反对，中间只剩 <b>"
+           + pc(m) + "%</b> —— 这不是一道含混的题，是一道把人分开的题。";
+    } else {
+      head = who + "的思想家对这件事，没有一致的意见。";
+      body = "<b>" + pc(y) + "%</b> 支持 · <b>" + pc(m) + "%</b> 无所谓 · <b>"
+           + pc(no) + "%</b> 反对，离散度 <b>" + sd.toFixed(2) + "</b>。";
+    }
+
+    // The question goes above the headline, every time it is redrawn: the
+    // headline says "全人类的思想家多数赞成这件事", and "这件事" is only
+    // checkable if the sentence it refers to is on screen next to it.
+    var asked = TK.question
+      ? "<div class='ask'>在问 <b>" + esc(TK.frame || TK.question) + "</b></div>" : "";
+    var html = asked + "<span class='tag'>" + (last ? "全人类" : esc(tkVerdictSpan(rows)))
+             + "</span><h3>" + esc(head) + "</h3><p>" + body + "</p>";
+
+    // Who is at the two ends, and whether the ends line up with a tradition.
+    // Only for all of history: one century of 11 people is a sample, not a camp.
+    if (last){
+      var sorted = rows.slice().sort(function(a, b){ return b.v - a.v; });
+      var hi = sorted[0], lo = sorted[sorted.length - 1];
+      var name = function(x){
+        var t = TK.byId[x.id] || { zh: x.id };
+        return esc(t.zh || x.id);
+      };
+      var line = "最支持 <b>" + name(hi) + " " + hi.v.toFixed(2) + "</b>"
+               + " · 最反对 <b>" + name(lo) + " " + lo.v.toFixed(2) + "</b>";
+      var cu = {}, floor = Math.max(25, Math.round(n * 0.03));
+      rows.forEach(function(rr){
+        var t = TK.byId[rr.id];
+        if (!t) return;
+        var c = t.circle;
+        if (!cu[c]) cu[c] = [0, 0];
+        cu[c][0] += 1;
+        if (rr.v >= TK_SCALE_HI) cu[c][1] += 1;
+      });
+      var ranked = Object.keys(cu).filter(function(c){
+        return cu[c][0] >= floor;
+      }).sort(function(a, b){
+        return (cu[b][1] / cu[b][0]) - (cu[a][1] / cu[a][0]);
+      });
+      if (ranked.length > 1){
+        var top = ranked[0], bot = ranked[ranked.length - 1];
+        var rate = function(c){ return Math.round(100 * cu[c][1] / cu[c][0]); };
+        line += "。按文化圈，支持率最高的是 <b>" + esc(tkCircleLabel(top))
+              + "（" + rate(top) + "%）</b>，最低的是 <b>" + esc(tkCircleLabel(bot))
+              + "（" + rate(bot) + "%）</b>";
+      }
+      html += "<p>" + line + "。</p>";
+    }
+    box.innerHTML = html;
+  }
+
+  // The span the verdict is about, without the "全部历史" case (that one says
+  // 全人类 instead).
+  function tkVerdictSpan(rows){
+    var lo = null, hi = null;
+    rows.forEach(function(r){
+      var t = TK.byId[r.id];
+      if (!t) return;
+      if (lo === null || t.end_year < lo) lo = t.end_year;
+      if (hi === null || t.end_year > hi) hi = t.end_year;
+    });
+    if (lo === null) return "这一百年";
+    if (lo === hi) return (lo < 0 ? "公元前 " + (-lo) : String(lo)) + " 年";
+    return tkSpanLabel(lo, hi);
+  }
+
+  function tkScalePanel(){
+    var s = TK.scale;
+    if (!TK.plan || !TK.bins.length) return;
+    var slice = tkSlice(TK.pos), last = TK.pos >= TK.bins.length;
+    var rows = [];
+    slice.dots.forEach(function(t){
+      var v = TK.scored[t.id];
+      if (v !== undefined) rows.push({ id:t.id, v:v });
+    });
+    if (!rows.length){ tkScaleFail(tkEmpty(slice)); return; }
+
+    var byHigh = function(a, b){
+      return b.v - a.v || tkScaleYearOf(a.id) - tkScaleYearOf(b.id)
+          || (a.id < b.id ? -1 : 1);
+    };
+    var byLow = function(a, b){
+      return a.v - b.v || tkScaleYearOf(a.id) - tkScaleYearOf(b.id)
+          || (a.id < b.id ? -1 : 1);
+    };
+    var byMid = function(a, b){
+      return Math.abs(a.v - 0.5) - Math.abs(b.v - 0.5) || byHigh(a, b);
+    };
+    var yes = rows.slice().sort(byHigh).slice(0, TK_SCALE_N);
+    var no  = rows.slice().sort(byLow).slice(0, TK_SCALE_N);
+    var mid = rows.slice().sort(byMid).slice(0, TK_SCALE_N);
+
+    var nY = 0, nN = 0, nM = 0;
+    rows.forEach(function(r){
+      if (r.v >= TK_SCALE_HI) nY += 1;
+      else if (r.v < TK_SCALE_LO) nN += 1;
+      else nM += 1;
+    });
+    var pct = function(n){ return Math.round(100 * n / rows.length); };
+
+    tkVerdict(rows, last);
+    $("tk-run-cal").classList.toggle("hidden", !last);
+
+    $("tk-scale-yes").innerHTML = tkScaleListHtml(yes, rows);
+    $("tk-scale-no").innerHTML = tkScaleListHtml(no, rows);
+    $("tk-scale-mid").innerHTML = tkScaleListHtml(mid, rows);
+
+    var BINS = 20, bins = [], bi;
+    for (bi = 0; bi < BINS; bi++) bins.push(0);
+    rows.forEach(function(r){
+      var b = Math.floor(r.v * BINS);
+      if (b >= BINS) b = BINS - 1;
+      if (b < 0) b = 0;
+      bins[b] += 1;
+    });
+    var mx = Math.max.apply(null, bins.concat([1]));
+    var hist = bins.map(function(c, i){
+      var lo = i / BINS, hi = (i + 1) / BINS;
+      var cls = hi <= TK_SCALE_LO ? " class='lo'" : (lo >= TK_SCALE_HI ? " class='hi'" : "");
+      var h = Math.max(1, Math.round(46 * c / mx));
+      return "<i" + cls + " style='height:" + h + "px' title='"
+           + lo.toFixed(2) + "–" + hi.toFixed(2) + " · " + c + " 个人'></i>";
+    }).join("");
+    // Where the ruler's people sit inside everyone else's distribution. Only at
+    // the last stop: a rung's value is an average over all eleven chunks, so
+    // drawing it on one century's histogram would mix two measurements that are
+    // not about the same population.
+    var cal = s.calibration;
+    if (last && cal && cal.rungs && cal.rungs.length){
+      hist += cal.rungs.map(function(r){
+        return "<em style='left:" + (Math.max(0, Math.min(1, r.mean)) * 100).toFixed(2)
+             + "%' title='" + esc(r.zh || r.id) + " · " + r.mean.toFixed(2)
+             + " · 锚点上的人'></em>";
+      }).join("");
+    }
+    $("tk-scale-hist").innerHTML = hist;
+
+    tkScaleRungs(s.calibration);
+    tkAnchorRow();
+
+    $("tk-scale-title").textContent = last ? "全人类怎么看这件事（全部历史）"
+      : "这一百年怎么看这件事";
+    $("tk-scale-right").textContent = last
+      ? rows.length + " / " + (s.roster || rows.length) + " · "
+        + (s.chunks || "?") + " 批 × 255 位"
+        + (s.repeats ? " · " + s.repeats + " 位测了不止一次" : "")
+      : slice.label + " · " + rows.length + " 人有分数";
+    $("tk-scale-note").innerHTML =
+      (last ? "<b>全部历史：" + rows.length + " 个人</b>"
+            : "<b>" + esc(slice.label) + "：这一段有分数的 " + rows.length
+              + " 个人</b>")
+      + " · <b>" + nY + " 支持 · " + nM + " 无所谓 · " + nN + " 反对</b>"
+      + "。0 = 最反对 · 0.5 = 无所谓 · 1 = 最支持。"
+      + "每个人正反两个方向各问一遍取中间，所以 0.5 是「两遍读法一致」，不是「没意见」。"
+      // A reused run finishes in a blink, and a panel that just appears out of
+      // nowhere reads as "it did not really run". Say which batches came off the
+      // disk, so the speed has a stated cause instead of being a mystery.
+      + (last && s.reused
+          ? "<br>其中 <b>" + s.reused + " / " + (s.chunks || "?")
+            + " 批</b>复用了同一句问题上一次的答案（同一批人、同一句问法，结果不会变），"
+            + "没有重新问，也没有花 token。"
+          : "")
+      // The wording changed with the question: the nouls no longer carry a
+      // one-line summary of anyone, so saying the model "read the frameworks"
+      // was describing a prompt that is not sent any more.
+      + "<br>这不是投票，也不是他们本人的话——是模型凭自己对这些人的了解给出的判断；"
+      + "名单里每行右边的年份是他去世（或在世）的年份。";
+  }
+
+  // The single gate: the first frame, the countdown, and the plan can finish in
+  // any order, and the animation starts when all three are done.
+
+
+  $("go-thinkers").onclick = tkStart;
+  $("tk-back").onclick = function(){
+    tkAbortScale(); tkStop(); TK.playing = false; show("ask");
+  };
+  $("tk-replay").onclick = function(){
+    if (TK.playing) return;
+    this.disabled = true;
+    // No refetch: the scores are already in hand, this only re-runs the
+    // sweep. Asking Jev the same question again would spend the user's tokens
+    // to draw the same picture.
+    tkStop();
+    TK.done = false;
+    // The headline is the end of the animation, so a replay has to take it
+    // away again and let it land when the sweep gets back to the last stop.
+    // Leaving it up during the re-run gives away the ending for free.
+    $("tk-verdict").innerHTML = "";
+    tkPlay();
+  };
+  $("tk-range").oninput = function(){
+    if (!TK.bins.length) return;
+    if (TK.playing){ TK.playing = false; tkStop(); $("tk-replay").disabled = false; }
+    TK.pos = parseInt(this.value, 10) || 0;
+    tkShow(TK.pos, null);
+    // The three lists and the histogram follow the scrubber: sliding to the
+    // 17th century asks "who was most in favour THEN", which is the whole
+    // reason to have a timeline rather than a number.
+    if (TK.bins.length) tkScalePanel();
+  };
+  window.addEventListener("resize", function(){
+    if ($("view-thinkers").classList.contains("hidden")) return;
+    tkMap(TK.pos, null);
+    tkAnchorRow();
+  });
+  /* Warm the roster (a local call) so the first click has no extra wait. */
+  tkPlan().catch(function(){});
+
+  /* Health check on load, so a missing key is obvious before typing anything. */
+  fetch("/api/health").then(function(r){ return r.json(); }).then(function(h){
+    var problems = [];
+    if (!h.jev_key) problems.push("TYPESAFE_API_KEY / JEV_API_KEY 未设置");
+    if (!h.deepseek_key) problems.push("DEEPSEEK_API_KEY 未设置");
+    if (problems.length){
+      var box = $("ask-err");
+      box.innerHTML = "<b>服务端缺少环境变量</b><br>" + problems.join("<br>") + "<br><span class='muted'>设置后重启 python3 server.py</span>";
+      box.classList.remove("hidden");
+    }
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

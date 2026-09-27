@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+
+# The key file the settings screen writes. It is deliberately not in a database,
+# which means there is nothing stopping `git add .` from picking it up -- so it is
+# ignored by pattern as well as by name.
+*.settings.json
+should_i.settings.json
+
+# The upstream-answer cache: tens of megabytes of reusable JSON, not source.
+# `SHOULD_I_JEV_CACHE=0` turns it off entirely.
+should_i.jevcache.db
+should_i.jevcache.db-shm
+should_i.jevcache.db-wal
