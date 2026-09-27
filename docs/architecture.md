@@ -29,13 +29,13 @@ Jev ×11 批，每批 255 个人 × 正反两个方向 = 510 道 noul，一次�
 
 同一个端点对同一份输入几乎是确定的（原样重跑 r = 0.997、平均差 0.0061），
 所以用 `(url, 请求体)` 做键的缓存**不会改变任何一次输出**，只保证同一句问题第二次不再付钱。
-`jevcache.py` 就是它，两个上游的每一次调用都过它。
+`app/jevcache.py` 就是它，两个上游的每一次调用都过它。
 
 键是请求体本身，所以**换模型 = 换键，换 key ≠ 换键**——同一句问题问同一个模型，
-答案是同一个，谁付的钱不影响这件事。它存在**另一个文件**（`should_i.jevcache.db`），
+答案是同一个，谁付的钱不影响这件事。它存在**另一个文件**（`app/should_i.jevcache.db`），
 超过 64 MB 按最近最少使用淘汰。
 
-三条它不许破的规矩，都在 `test_upstreams.py` 里：
+三条它不许破的规矩，都在 `tests/test_upstreams.py` 里：
 
 - **失败永不入库。** 只有带 `answers`（Jev）或 `choices`（DeepSeek）的响应才写得进去。
   缓存一次超时，会把一分钟的网络故障变成永久答案。
@@ -49,22 +49,23 @@ Jev ×11 批，每批 255 个人 × 正反两个方向 = 510 道 noul，一次�
 
 ## 文件清单
 
-README 的「项目结构」只列了核心几个，这里是全部。
+README 的「项目结构」是一张目录图，这里是逐个文件的清单。
 
 | 文件 | 作用 |
 | --- | --- |
-| `thinkers.py` | 名录、分帧、255 恒等式、noul 问题的形状与 `state`（纯逻辑，无网络） |
-| `thinkers_data.py` | 名录本体：2578 位、13 个文化圈、年份 + 经纬度 + 框架 |
-| `thinkers_pinyin.py` | 每个人的拼音形式，给锚点选择面板搜名字用（`gen_pinyin.py` 生成） |
-| `upstreams.py` | Jev 和 DeepSeek 两个客户端；对模型输出的校验与回退都在这里 |
-| `jevcache.py` | 上游答案的缓存：键是请求本身；失败不入库、命中报 0 token、可整体关闭 |
-| `settings.py` | 设置页写的 key 文件：读写、0600、掩码（纯逻辑，无网络） |
-| `server.py` | 标准库 HTTP 服务：静态页 + `/api/*`，key 只留在这里 |
-| `index.html` | 单文件前端（样式 + 原生 JS，无依赖），有意复刻 typesafe.ai 的视觉 |
-| `test_thinkers.py` | `thinkers.py` 的单元测试：255 恒等式、全覆盖不丢人、窗口重叠、尺子的分批与锚 |
-| `test_upstreams.py` | `upstreams.py` 的纯逻辑测试：改写形状的三道闸、以及缓存的四条规矩 |
-| `test_settings.py` | 设置与密钥的单元测试：读写、权限、以及不泄漏 |
-| `gen_pinyin.py` | 从 `thinkers_data.py` 重新生成 `thinkers_pinyin.py` |
-| `smoke_test.py` | 端到端命令行验证：`--run` 才会发那 11 次请求 |
+| `app/server.py` | 标准库 HTTP 服务：静态页 + `/api/*`，key 只留在这里 |
+| `app/index.html` | 单文件前端（样式 + 原生 JS，无依赖），有意复刻 typesafe.ai 的视觉 |
+| `app/thinkers.py` | 名录、分帧、255 恒等式、noul 问题的形状与 `state`（纯逻辑，无网络） |
+| `app/thinkers_data.py` | 名录本体：2578 位、13 个文化圈、年份 + 经纬度 + 框架 |
+| `app/thinkers_pinyin.py` | 每个人的拼音形式，给锚点选择面板搜名字用 |
+| `app/upstreams.py` | Jev 和 DeepSeek 两个客户端；对模型输出的校验与回退都在这里 |
+| `app/jevcache.py` | 上游答案的缓存：键是请求本身；失败不入库、命中报 0 token、可整体关闭 |
+| `app/settings.py` | 设置页写的 key 文件：读写、0600、掩码（纯逻辑，无网络） |
+| `scripts/gen_pinyin.py` | 从 `app/thinkers_data.py` 重新生成 `app/thinkers_pinyin.py` |
+| `scripts/smoke_test.py` | 端到端命令行验证：`--run` 才会发那 11 次请求 |
+| `tests/test_thinkers.py` | `thinkers.py` 的单元测试：255 恒等式、全覆盖不丢人、窗口重叠、尺子的分批与锚 |
+| `tests/test_upstreams.py` | `upstreams.py` 的纯逻辑测试：改写形状的三道闸、以及缓存的四条规矩 |
+| `tests/test_settings.py` | 设置与密钥的单元测试：读写、权限、以及不泄漏 |
+| `tests/_bootstrap.py` | 把 `app/` 放进 `sys.path`：测试在 `tests/`，模块在 `app/` |
 
 怎么跑这些测试，见 [README](../README.md) 的「测试」。

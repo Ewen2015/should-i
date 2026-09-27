@@ -3,6 +3,8 @@
 import sys
 from urllib.parse import quote
 
+import _bootstrap  # noqa: F401  -- puts ../app on sys.path
+
 import thinkers
 
 from thinkers import (ANCHORS, CIRCLE_EN, CIRCLE_ORDER, CURRENT_YEAR, ROSTER, SIZE,

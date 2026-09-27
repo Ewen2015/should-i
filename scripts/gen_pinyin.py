@@ -3,7 +3,7 @@
 """Regenerate `thinkers_pinyin.py` -- the picker's pinyin search index.
 
     pip3 install --target /tmp/pylibs pypinyin
-    PYTHONPATH=/tmp/pylibs python3 gen_pinyin.py
+    PYTHONPATH=/tmp/pylibs python3 scripts/gen_pinyin.py
 
 Run this whenever anyone is added to `thinkers_data.py`, or the new person will
 be findable by Chinese and English name but not by pinyin. `test_thinkers.py`
@@ -38,15 +38,16 @@ try:
     from pypinyin import pinyin, Style
 except ImportError:  # pragma: no cover - a build tool, not shipped code
     sys.exit("需要 pypinyin：pip3 install --target /tmp/pylibs pypinyin\n"
-             "然后 PYTHONPATH=/tmp/pylibs python3 gen_pinyin.py")
+             "然后 PYTHONPATH=/tmp/pylibs python3 scripts/gen_pinyin.py")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+APP = os.path.abspath(os.path.join(HERE, os.pardir, "app"))
+sys.path.insert(0, APP)
 from thinkers_data import RAW  # noqa: E402
 
 BUDGET = 48          # characters of index per person, initials included
 COMBO_CAP = 8        # alternate initial-strings kept when a name is ambiguous
-OUT = os.path.join(HERE, "thinkers_pinyin.py")
+OUT = os.path.join(APP, "thinkers_pinyin.py")
 
 
 def syllables(zh):

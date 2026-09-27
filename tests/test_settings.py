@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Tests for the key file behind the settings screen -- no keys, no network:
 
-    python3 test_settings.py
+    python3 tests/test_settings.py
 
 Two things are being pinned down here, and the second matters more than the
 first. First, that saving, merging and clearing keys behaves. Second, that a
@@ -19,8 +19,7 @@ import stat
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+import _bootstrap  # noqa: F401  -- puts ../app on sys.path
 
 import settings  # noqa: E402
 import server  # noqa: E402

@@ -3,7 +3,7 @@
 """Unit tests for the parts of this product that are pure logic -- no keys, no
 network, no browser:
 
-    python3 test_upstreams.py
+    python3 tests/test_upstreams.py
 
 Exits non-zero if anything fails, so it can gate a commit. Two groups live here.
 The `frame_*` guards decide whether a model's restatement is allowed anywhere
@@ -18,6 +18,8 @@ from __future__ import annotations
 import contextlib
 import json
 import sys
+
+import _bootstrap  # noqa: F401  -- puts ../app on sys.path
 
 import jevcache
 

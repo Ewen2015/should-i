@@ -4,7 +4,7 @@
 
     export TYPESAFE_API_KEY="..."   # Jev: the judgements
     export DEEPSEEK_API_KEY="..."   # one short call: naming what X is
-    python3 server.py               # then open http://127.0.0.1:8420
+    python3 app/server.py           # then open http://127.0.0.1:8420
 
 Standard library only, no build step, no framework. The API keys stay in this
 process; the browser only ever talks to /api/*.

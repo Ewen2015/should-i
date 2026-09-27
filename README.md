@@ -23,7 +23,7 @@ Python 3.9+ · 只用标准库，没有依赖、没有构建步骤、没有数�
 export TYPESAFE_API_KEY="..."   # Jev：那 5610 次判断
 export DEEPSEEK_API_KEY="..."   # DeepSeek：只有一件事——把 X 说出来
 
-python3 server.py               # 然后打开 http://127.0.0.1:8420
+python3 app/server.py           # 然后打开 http://127.0.0.1:8420
 ```
 
 不想碰终端的话，环境变量可以不设：起服务后打开页面底部的**「设置 API key」**，
@@ -32,7 +32,7 @@ key 只留在这个进程里，浏览器只跟 `/api/*` 说话。
 
 > 如果这台机器有本地代理（Clash 之类），`http_proxy` 会把发往 `127.0.0.1` 的请求也拦下来，
 > 看起来就像服务没起来。给自己配一个：`export no_proxy=127.0.0.1,localhost`。
-> `smoke_test.py` 自己关掉代理，所以不受影响。
+> `scripts/smoke_test.py` 自己关掉代理，所以不受影响。
 
 **可选环境变量**
 
@@ -74,29 +74,38 @@ key 只留在这个进程里，浏览器只跟 `/api/*` 说话。
 
 ## 项目结构
 
-| 文件 | 作用 |
-| --- | --- |
-| `index.html` | 单文件前端：样式 + 原生 JS，无依赖 |
-| `server.py` | 标准库 HTTP 服务：静态页 + `/api/*`，key 只留在这个进程里 |
-| `thinkers.py` | 名录、分帧、255 恒等式、noul 题目与 `state`（纯逻辑，无网络） |
-| `thinkers_data.py` | 名录本体：2578 位、13 个文化圈、年份 + 经纬度 |
-| `thinkers_pinyin.py` | 拼音形式，给锚点选择面板搜名字用（`gen_pinyin.py` 生成） |
-| `upstreams.py` | Jev 和 DeepSeek 两个客户端；对模型输出的校验与回退都在这里 |
-| `jevcache.py` | 上游答案缓存：键是请求本身；失败不入库、命中报 0 token |
-| `settings.py` | 设置页写的 key 文件：读写、0600、掩码（纯逻辑，无网络） |
+```
+app/                 运行的产品本身 —— 服务、页面、名录
+  server.py            标准库 HTTP 服务：静态页 + /api/*，key 只留在这个进程里
+  index.html           单文件前端：样式 + 原生 JS，无依赖
+  thinkers.py          名录、分帧、255 恒等式、noul 题目与 state（纯逻辑，无网络）
+  thinkers_data.py     名录本体：2578 位、13 个文化圈、年份 + 经纬度
+  thinkers_pinyin.py   拼音索引，给锚点选择面板搜名字用
+  upstreams.py         Jev 和 DeepSeek 两个客户端；对模型输出的校验与回退都在这里
+  jevcache.py          上游答案缓存：键是请求本身；失败不入库、命中报 0 token
+  settings.py          设置页写的 key 文件：读写、0600、掩码（纯逻辑，无网络）
+scripts/             一次性工具，不参与运行
+  gen_pinyin.py        从 app/thinkers_data.py 重建 app/thinkers_pinyin.py
+  smoke_test.py        对着一个跑起来的服务做端到端验证
+tests/               纯逻辑测试：无网络、无 key、无浏览器
+docs/                设计笔记、架构、页面、名录、已知取舍
+```
+
+运行时会多出两个文件——答案缓存和 key 文件——都落在 `app/` 里，也都在
+`.gitignore` 里。两者都可以用环境变量换个位置。
 
 ## 测试
 
 ```bash
-python3 test_thinkers.py && python3 test_upstreams.py && python3 test_settings.py
+python3 tests/test_thinkers.py && python3 tests/test_upstreams.py && python3 tests/test_settings.py
 ```
 
 纯逻辑测试：无网络、无 key、无浏览器。
 
 ```bash
-python3 -u server.py &
-python3 smoke_test.py "人类要成为一个星际文明吗？"          # 名录 + 改写，不花钱
-python3 smoke_test.py "人类要成为一个星际文明吗？" --run    # 加上那 11 批（真花钱）
+python3 -u app/server.py &
+python3 scripts/smoke_test.py "人类要成为一个星际文明吗？"          # 名录 + 改写，不花钱
+python3 scripts/smoke_test.py "人类要成为一个星际文明吗？" --run    # 加上那 11 批（真花钱）
 ```
 
 ## 文档

@@ -2273,7 +2273,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     if (!h.deepseek_key) problems.push("DEEPSEEK_API_KEY 未设置");
     if (problems.length){
       var box = $("ask-err");
-      box.innerHTML = "<b>服务端缺少环境变量</b><br>" + problems.join("<br>") + "<br><span class='muted'>设置后重启 python3 server.py</span>";
+      box.innerHTML = "<b>服务端缺少环境变量</b><br>" + problems.join("<br>") + "<br><span class='muted'>设置后重启 python3 app/server.py</span>";
       box.classList.remove("hidden");
     }
   }).catch(function(){});
