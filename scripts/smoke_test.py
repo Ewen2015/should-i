@@ -3,8 +3,8 @@
 """End-to-end check of a running Ask Great Thinkers server, without a browser.
 
     python3 -u app/server.py &
-    python3 scripts/smoke_test.py "人类要成为一个星际文明吗？"          # plan + rewrite only
-    python3 scripts/smoke_test.py "人类要成为一个星际文明吗？" --run    # + the full 11-chunk sweep
+    python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？"          # plan + rewrite only
+    python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？" --run    # + the full 11-chunk sweep
 
 Two levels on purpose, because the two halves of this product cost wildly
 different amounts. `/api/thinkers/plan` and `/api/thinkers/frame` are a local
@@ -23,7 +23,7 @@ import urllib.request
 
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
-DEFAULT_QUESTION = "人类要成为一个星际文明吗？"
+DEFAULT_QUESTION = "如果有机会，我要去火星移民吗？"
 
 
 def call(base, path, payload=None, method=None, timeout=180):

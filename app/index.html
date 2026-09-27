@@ -530,7 +530,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     <div class="win paper askwin">
       <div class="bar"><span>输入 · 你在想的那件事</span><span class="r">按 ⌘/Ctrl + Enter 提交</span></div>
       <div class="body">
-        <textarea id="q" placeholder="例如：人类要成为一个星际文明吗？"></textarea>
+        <textarea id="q"></textarea>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
           <span class="lbl muted">原样丢进来就行，一句话也可以</span>
           <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -1715,8 +1715,20 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   }
 
 
+  /* The example question, in exactly one place: it is the placeholder, and it is
+     what an empty box runs. Pressing Ask without typing anything is the most
+     common first move there is -- someone wants to see what the thing does
+     before spending their own question on it -- and answering that with an error
+     made the reader work to find out. */
+  var TK_EXAMPLE_Q = "如果有机会，我要去火星移民吗？";
+
   function tkStart(){
-    var q = $("q").value.trim();
+    var box = $("q"), q = box.value.trim();
+    // The box is filled before the run, not behind its back: the panel under the
+    // map shows the question as 原话, and 原话 has to be something the box
+    // actually holds. Come back from a run and the example is sitting there,
+    // which is also the honest place for it.
+    if (!q){ box.value = TK_EXAMPLE_Q; q = TK_EXAMPLE_Q; }
     if (q.length < 2){
       var b = $("ask-err");
       b.innerHTML = "<b>先说一件你在纠结的事</b><br><span class='muted'>上面那句话会原样拿去问思想者</span>";
@@ -2660,6 +2672,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
      starts the sound and next to 重播, which plays it again -- a reader should
      never have to start the noise in order to find the switch that stops it.
      Both read the same state, so they cannot disagree. */
+  $("q").placeholder = "例如：" + TK_EXAMPLE_Q;
   var TK_SOUND_BTNS = ["tk-sound-ask", "tk-sound"];
   var tkSoundPaint = function(){
     var label = TK_SND.on() ? "音效 · 开" : "音效 · 关";
@@ -2675,7 +2688,13 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   tkSoundPaint();
   $("go-thinkers").onclick = tkStart;
   $("tk-back").onclick = function(){
-    tkAbortScale(); tkStop(); TK.playing = false; show("ask");
+    tkAbortScale(); tkStop(); TK.playing = false;
+    // Back at the entry screen, an untouched example is cleared: it stood in for
+    // "no question yet", and leaving it there just makes the reader type onto the
+    // end of it. A question they actually typed is left alone -- they may well be
+    // coming back to edit it.
+    if ($("q").value.trim() === TK_EXAMPLE_Q) $("q").value = "";
+    show("ask");
   };
   $("tk-replay").onclick = function(){
     if (TK.playing) return;
