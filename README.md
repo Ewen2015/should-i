@@ -134,3 +134,5 @@ python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？" --
 ## 许可
 
 MIT，见 [LICENSE](LICENSE)。
+
+幻灯最后那页的太阳照片来自 [WeatherSTEM](https://learn.weatherstem.com/modules/learn/lessons/127/06.html)，版权归原作者，不在 MIT 授权范围内。
