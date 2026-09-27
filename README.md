@@ -17,10 +17,11 @@
 
 ## 它站的位置
 
-这个产品只有一条原理：**把「我觉得」换成「我量到」**。它不肯说一句没有读数的判断，
-所以模型只被当量具——每道题只有身份，没有一句「他想过什么」；量具自己有偏，就正反各问一遍
-把偏对称地抵消掉；「各批可比」不是一句承诺，而是每批 12 个锚当场量出来的数（最大差 0.055）；
-画面上是两位小数，那就把 0.055 写在旁边。展开在 [docs/philosophy.md](docs/philosophy.md)。
+**提问需要框架，回答不需要。** 所以这里不做更聪明的聊天框，而是把问题问给很多人，
+看答案铺开成什么形状——每多一个人，就多一个判断，而不是多一份推理开销。
+模型也不是聊天对象，是电钻：预训练模型把人类知识压缩成一处矿脉，jev-like 是钻开它的钻头，
+而这条产品线要建的是**钻井平台**。`ask great thinkers` 是平台上第一口井：
+一次提问 5,610 个判断（而一次对话只有 1 个回答）。展开在 [docs/philosophy.md](docs/philosophy.md)。
 
 ## 快速开始
 
@@ -117,7 +118,7 @@ python3 scripts/smoke_test.py "人类要成为一个星际文明吗？" --run   
 
 | 文档 | 内容 |
 | --- | --- |
-| [docs/philosophy.md](docs/philosophy.md) | 产品站的位置：一条原理，和从它推出来的九条不肯让步 |
+| [docs/philosophy.md](docs/philosophy.md) | 产品哲学：为什么是让所有人回答问题，为什么是做井而不是做聊天框 |
 | [docs/design.md](docs/design.md) | 每个设计决定，和支撑它的实测数字 |
 | [docs/architecture.md](docs/architecture.md) | 一次运行的完整流程、缓存的三条规矩、文件清单 |
 | [docs/interface.md](docs/interface.md) | 页面：地图、时间轴、面板、视觉语言 |
