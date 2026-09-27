@@ -135,4 +135,10 @@ python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？" --
 
 MIT，见 [LICENSE](LICENSE)。
 
-幻灯最后那页的太阳照片来自 [WeatherSTEM](https://learn.weatherstem.com/modules/learn/lessons/127/06.html)，版权归原作者，不在 MIT 授权范围内。
+幻灯最后那页的太阳照片**不在 MIT 授权范围内**，它有自己的授权，署名必须跟着它走。
+
+- 文件：[Planets and sun size comparison.jpg](https://commons.wikimedia.org/wiki/File:Planets_and_sun_size_comparison.jpg)，来自 Wikimedia Commons
+- 作者：**Lsmpascal**（自己的作品）
+- 授权：[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)，署名必须保留；改动后的版本必须以同一授权发布
+
+这张照片在 [WeatherSTEM 的课程页](https://learn.weatherstem.com/modules/learn/lessons/127/06.html) 上也能找到，而那一页自己把它标注为来自维基百科。
