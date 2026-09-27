@@ -369,10 +369,14 @@ textarea::placeholder{color:rgba(30,30,30,.38)}
 .tk-scale-note b{color:var(--ink)}
 .tk-scale-cols{display:flex;gap:14px;flex-wrap:wrap}
 .tk-scale-col{flex:1 1 240px;min-width:0}
-.tk-scale-h{font:700 10px/1 var(--mono);letter-spacing:.1em;padding:5px 7px;
-  border:1px solid var(--ink);margin-bottom:7px;display:block}
-.tk-scale-h.do{background:var(--magenta);color:var(--paper)}
-.tk-scale-h.dont{background:#8ce8f0}
+/* One chip, two places: above the three lists, and on the two ends of the
+   distribution. Same two colours in both -- magenta is 支持, cyan is 反对 -- so
+   a reader who has learned them once can read either at a glance. */
+.tk-scale-h,.tk-hist-end{font:700 10px/1 var(--mono);letter-spacing:.1em;
+  padding:5px 7px;border:1px solid var(--ink);display:block}
+.tk-scale-h{margin-bottom:7px}
+.tk-scale-h.do,.tk-hist-end.do{background:var(--magenta);color:var(--paper)}
+.tk-scale-h.dont,.tk-hist-end.dont{background:#8ce8f0}
 .tk-scale-h.mid{background:var(--paper);color:var(--dim)}
 .tk-scale-list{list-style:none;margin:0;padding:0;font:11px/1.5 var(--mono)}
 .tk-scale-list li{display:flex;gap:6px;align-items:baseline;
@@ -382,7 +386,22 @@ textarea::placeholder{color:rgba(30,30,30,.38)}
 .tk-scale-list .er{color:var(--dim);font-size:9px;white-space:nowrap}
 /* Where the 2578 answers actually sit. A top-12 list hides how wide the field
    was, and "lowest of a narrow field" is not the same claim as "against". */
-.tk-scale-hist{position:relative;display:flex;align-items:flex-end;gap:2px;height:46px;margin-top:14px}
+/* The distribution's own header and axis. It had neither: the bars were coloured
+   by side but the two ends were never named, so a reader had to work out which
+   way the scale ran from the colours alone. The ends are the same chips as the
+   three lists above -- 0.00 is 最反对, 1.00 is 最支持, said once, in the colours
+   the page already uses for them.
+   The anchors button lives here rather than in the header toolbar because this
+   is the only drawing the anchors appear in. */
+.tk-hist-head{display:flex;align-items:center;justify-content:space-between;
+  gap:12px;margin-top:22px;flex-wrap:wrap}
+.tk-hist-lbl{font:10px/1 var(--mono);letter-spacing:.12em;color:var(--dim)}
+.tk-scale-hist{position:relative;display:flex;align-items:flex-end;gap:2px;height:46px;margin-top:9px}
+/* The bottom margin is load-bearing, not taste: the anchor names are drawn by
+   tkAnchorRow() from the top of its own box downwards, so without the gap the
+   short names collide with these two chips and the leader hairlines cross them. */
+.tk-hist-axis{display:flex;justify-content:space-between;align-items:center;
+  margin-top:6px;margin-bottom:15px}
 .tk-scale-hist i{flex:1;background:var(--ink);opacity:.35;min-height:1px}
 .tk-scale-hist i.hi{background:var(--magenta);opacity:1}
 .tk-scale-hist i.lo{background:#8ce8f0;opacity:1}
@@ -540,7 +559,6 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap">
       <h1 class="display">Ask&nbsp;Great&nbsp;Thinkers</h1>
       <div style="display:flex;gap:9px">
-        <button class="btn ghost" id="tk-anchors" title="换掉锚点上的默认 12 人">锚点 12 人</button>
         <button class="btn ghost" id="tk-rerun" disabled
                 title="用现在这组锚点把同一个问题重问一遍">重跑</button>
         <button class="btn ghost" id="tk-replay" disabled>重播</button>
@@ -553,11 +571,6 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       <div class="q" id="tk-q-text">—</div>
       <div class="raw" id="tk-q-raw"></div>
       <div class="raw" id="tk-q-en"></div>
-    </div>
-
-    <div class="tk-stale hidden" id="tk-stale">
-      <span id="tk-stale-txt">—</span>
-      <button class="btn" id="tk-stale-go">用新锚点重跑</button>
     </div>
 
     <div class="win paper" style="margin:0">
@@ -629,7 +642,26 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
               <div class="tk-scale-h mid">最无所谓</div><ol class="tk-scale-list" id="tk-scale-mid"></ol>
             </div>
           </div>
+          <!-- The warning goes where the button that causes it is. It used to
+               sit above the map, which was fine while the anchors button was in
+               the toolbar beside it; with the button moved down to the
+               distribution, the measured distance between the two was 1834px --
+               the reader changed the ruler and the only thing that says so, and
+               offers to re-run, was off screen. -->
+          <div class="tk-stale hidden" id="tk-stale">
+            <span id="tk-stale-txt">—</span>
+            <button class="btn" id="tk-stale-go">用新锚点重跑</button>
+          </div>
+          <div class="tk-hist-head">
+            <span class="tk-hist-lbl">这些人落在哪儿</span>
+            <button class="btn ghost" id="tk-anchors"
+                    title="换掉锚点上的默认 12 人">锚点 12 人</button>
+          </div>
           <div class="tk-scale-hist" id="tk-scale-hist"></div>
+          <div class="tk-hist-axis">
+            <span class="tk-hist-end dont">反对 0.00</span>
+            <span class="tk-hist-end do">1.00 支持</span>
+          </div>
           <!-- The anchors are the signature of the RUN, not of one century: the
                same values come back under every slice. Printing them under
                "700–799 年" invites the reader to think 老子 0.21 is a fact about
@@ -1729,7 +1761,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       if (added.length) bits.push("<b>加 " + esc(tkNameList(added)) + "</b>");
       if (dropped.length) bits.push("<b>去掉 " + esc(tkNameList(dropped)) + "</b>");
       $("tk-stale-txt").innerHTML = "锚点已改（" + bits.join("、") + "）。"
-        + "但下面这些数字还是按上一批锚点跑出来的 —— 换人就是换尺子，"
+        + "但这一页的数字还是按上一批锚点跑出来的 —— 换人就是换尺子，"
         + "要用新的这组 <b>" + (TK.anchorIds || []).length + " 人</b> 重问一遍才算数。";
     }
     if (box) box.classList.toggle("hidden", !on);
