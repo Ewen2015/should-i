@@ -50,9 +50,16 @@ b.hi{background:var(--pink);padding:1px 4px}
 b.lo{background:var(--cyan);padding:1px 4px}
 svg{display:block}
 
-/* ---------- 1 · cover. The name, and nothing else. ---------- */
-.cover .display{position:absolute;left:0;right:0;top:44%;transform:translateY(-50%);
+/* ---------- 1 · cover. The name, and whose it is. ---------- */
+.cover .display{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);
   text-align:center;font-size:118px;z-index:1}
+.cover .byline{position:absolute;left:0;right:0;top:60%;z-index:1;
+  display:flex;flex-direction:column;align-items:center}
+.cover .byline .rule{width:126px;height:1px;background:var(--ink);opacity:.34}
+.cover .byline .who{margin-top:19px;font:14px/1.6 var(--mono);letter-spacing:.06em;
+  color:rgba(30,30,30,.82)}
+.cover .byline a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(30,30,30,.34)}
+.cover .byline a:hover{border-bottom-color:var(--ink)}
 
 /* ---------- 3 and 4 ---------- */
 .body{padding:34px 46px 0}
@@ -114,6 +121,10 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
   <section class="slide cover on">
     <div class="sky"></div>
     <h1 class="display">Ask Great&nbsp;Thinkers</h1>
+    <div class="byline">
+      <span class="rule"></span>
+      <span class="who">Ewen Wang · <a href="https://github.com/Ewen2015">github.com/Ewen2015</a></span>
+    </div>
   </section>
 
   <!-- 2 · the epigraph, on a page of its own. The two halves of the argument
@@ -414,6 +425,7 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
   });
   addEventListener("click", function(e){
     if(e.target.closest("#hud")) return;
+    if(e.target.closest("a")) return;
     show(i + (e.clientX < innerWidth/2 ? -1 : 1));
   });
 })();
