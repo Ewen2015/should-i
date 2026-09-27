@@ -794,7 +794,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     scale:{scores:null, answered:0, roster:0, usage:null, error:null,
            done:false, ctl:null, calibration:null, repeats:0, measurements:0,
            reused:0, saved:null},
-    planReady:false, countdownDone:false
+    planReady:false, countdownDone:false, frameMissed:false
   };
   // How long one century holds the screen when the data is already there. The
   // data is 19s for the whole roster and this is ~20s for the whole sweep, so
@@ -877,7 +877,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     tkStop();
     TK.playing = false; TK.done = false; TK.pos = 0; TK.raf = 0;
     TK.scored = {}; TK.frontier = null;
-    TK.planReady = false; TK.countdownDone = false;
+    TK.planReady = false; TK.countdownDone = false; TK.frameMissed = false;
     TK.scale = {scores:null, answered:0, roster:0, usage:null, error:null,
                 done:false, ctl:null, calibration:null, repeats:0,
                 measurements:0, chunks:0, total:0, reused:0, saved:null};
@@ -1026,10 +1026,30 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     });
   }
 
-  function tkCountdown(done){
+  /* The countdown is the only thing on screen while a run is being set up, so it
+     is also the only cover that setup gets.
+
+     It lifts on two conditions, not one: the "3 2 1" has been read, and the run
+     is ready to ask. The second is why it takes a promise. The last beat used to
+     run out on a fixed 520ms timer whatever was happening behind it, and what
+     happens behind it is the restatement call, which is bimodal -- 1.03s on a
+     fresh question and 7.12s on the same one cold, against a countdown that ends
+     at 2.47s either way. So the slow half landed under an empty page: 2.54s
+     measured between the countdown disappearing and the first Jev request
+     leaving, with nothing on screen in between.
+
+     Past TK_HOLD_QUIET the beat counts the seconds out loud. A held beat with no
+     clock on it is the same freeze with a longer name. */
+  function tkCountdown(held, done){
     var el = $("tk-count");
     var seq = ["3","2","1"];
-    var i = 0;
+    var i = 0, armed = false, ready = false, gone = false, holding = false;
+    var lift = function(){
+      if (gone || !armed || !ready) return;
+      gone = true; holding = false;
+      el.classList.add("hidden");
+      done();
+    };
     el.classList.remove("hidden");
     el.innerHTML = seq[0] + "<small>全世界的思想者，一起判这一件事</small>";
     var step = function(){
@@ -1037,10 +1057,24 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       if (i < seq.length){
         el.innerHTML = seq[i] + "<small>全世界的思想者，一起判这一件事</small>";
         tkLater(step, 640);
-      } else {
-        el.innerHTML = "<div style='text-align:center'>判<small>正在问 Jev</small></div>";
-        tkLater(function(){ el.classList.add("hidden"); done(); }, 520);
+        return;
       }
+      holding = true;
+      var t0 = Date.now();
+      var paint = function(){
+        var s = (Date.now() - t0) / 1000;
+        var sub = s < TK_HOLD_QUIET ? "正在问 Jev"
+                                    : "正在核对题干 · 已等 " + Math.round(s) + " 秒";
+        el.innerHTML = "<div style='text-align:center'>判<small>" + sub + "</small></div>";
+        if (holding) tkLater(paint, 250);
+      };
+      paint();
+      // 3-2-1 is what says a run began, so it is read even by a run that was
+      // ready before the countdown started.
+      tkLater(function(){ armed = true; lift(); }, 520);
+      if (held && held.then) held.then(function(){ ready = true; lift(); },
+                                       function(){ ready = true; lift(); });
+      else ready = true;
     };
     tkLater(step, 640);
   }
@@ -1376,8 +1410,15 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
      panel labels 1 as 最支持. A question typed as "人类要成为一个星际文明吗？"
      leaves X implicit, and an implicit X makes every number under it unreadable:
      support for WHAT. This asks DeepSeek to name X, once, in its own request --
-     it is one short call with no roster in it, so it lands long before eleven
-     Jev requests do.
+     it is one short call with no roster in it, and it is the only thing a run
+     waits on before it can ask at all.
+
+     "One short call" was read as "a fast call" for as long as nobody measured
+     it, and the two are not the same. Measured on this machine: 0.006s off the
+     cache, 1.03s on a fresh question, and 7.12s on that same fresh question
+     when the model is cold. The countdown is 2.47s long. So the fast half of
+     that split hides inside the animation and the slow half does not -- which
+     is the freeze tkCountdown now covers.
 
      It never blocks: until the answer arrives the reader sees their own words,
      and if the call fails they keep seeing their own words. */
@@ -1432,8 +1473,12 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     // what has to be visible is the sentence the nouls were actually given, and
     // a run that started without it must not show one afterwards.
     var en = (TK.scale && TK.scale.stateEn) || "";
-    $("tk-q-en").textContent = en ? "英文题干：" + en : "";
-    $("tk-q-en").title = en;
+    // A run whose restatement never arrived is judged on the reader's own words,
+    // and it says so here rather than showing a blank line that reads like a
+    // field nobody needed. See TK.frameMissed in tkScale.
+    var missed = !en && TK.frameMissed ? "英文题干没拿回来 —— 这一遍按你原话里的问法判" : "";
+    $("tk-q-en").textContent = en ? "英文题干：" + en : missed;
+    $("tk-q-en").title = en || missed;
   }
 
   // different route through the page than the shipped twelve did.
@@ -1444,9 +1489,13 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     // verdict is generated from numbers and changes with the century, so it has
     // no fixed text that could carry the question for it.
     TK.question = q;
-    var frameP = tkFrame(q);
+    // One promise, two readers, and it is deliberately the same promise: the run
+    // waits for it before it sends anything, and the countdown waits for it
+    // before it lifts. Two separate deadlines could disagree, and the one that
+    // lifted early is the freeze this replaced.
+    var ready = tkBeforeFrame(tkFrame(q));
     // The ruler IS the animation now, so there is only one request to wait on.
-    tkScale(q, frameP);
+    tkScale(q, ready);
     tkPlan().then(function(){
       TK.bins = tkCenturies();
       TK.frontier = null;
@@ -1454,7 +1503,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       $("tk-range").value = "0";
       $("tk-bar-right").textContent = TK.bins.length + " 段 · 每段 100 年";
       TK.planReady = true;
-      tkCountdown(function(){ TK.countdownDone = true; tkMaybeStart(); });
+      tkCountdown(ready, function(){ TK.countdownDone = true; tkMaybeStart(); });
     }).catch(function(){
       $("tk-bar-label").textContent = "名录没加载出来";
       fail($("tk-err"), {ok:false, status:0, data:{error:"拿不到思想者名录", hint:"刷新一下"}});
@@ -1710,6 +1759,12 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   var TK_SCALE_HI = 0.60;   // >= this and the framework points at "do it"
   var TK_SCALE_LO = 0.40;   // <  this and it points at "don't"
 
+  // How long the countdown's last beat holds before it starts counting seconds.
+  // The beat is 520ms when nothing is wrong and the whole countdown is 2.47s,
+  // so two seconds keeps the clock off every ordinary run and puts it on the
+  // one the reader is actually stuck in.
+  var TK_HOLD_QUIET = 2.0;
+
   function tkAbortScale(){
     if (TK.scale.ctl){ try { TK.scale.ctl.abort(); } catch (e) {} }
     TK.scale.ctl = null;
@@ -1718,9 +1773,23 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   // How long a run waits for the English restatement before asking anyway. The
   // state is what the eleven Jev requests are judged over, so it has to be
   // final before they go out -- but a slow DeepSeek must never hold eleven paid
-  // requests hostage. Five seconds is longer than that call takes when it works
-  // and shorter than the eleven chunks it feeds.
-  var TK_FRAME_WAIT = 5000;
+  // requests hostage.
+  //
+  // This used to be 5000, on the belief that the call takes about a second.
+  // That belief was true of the cache (0.006s) and of a warm model (1.03s) and
+  // false of a cold one: 7.12s, measured. So the old deadline expired *before*
+  // the answer it was waiting for and every cold run went out with
+  // the_same_decision_in_english missing -- eleven paid requests judging
+  // "support it" against a question that never says what "it" is. Twenty
+  // seconds is three times the worst case actually observed; the countdown
+  // counts the wait out loud, so a reader who hits one can see it happening
+  // rather than watching a stopped page.
+  //
+  // The ceiling is still a ceiling, because the alternative is a hung socket
+  // holding a run open forever. What it must not be is *shorter than the call
+  // works in* -- silently dropping the state is worse than waiting, and
+  // dropping it was the more expensive half of this bug.
+  var TK_FRAME_WAIT = 20000;
 
   function tkBeforeFrame(frameP){
     return new Promise(function(resolve){
@@ -1741,7 +1810,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     });
   }
 
-  function tkScale(q, frameP){
+  function tkScale(q, ready){
     // A whole new object, and every message below is gated on identity: a new
     // question replaces TK.scale, and the old stream's late lines must land on
     // the floor rather than paint a stale ruler under the new run.
@@ -1755,10 +1824,15 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     // The nouls are asked in English, every one of them says "support it", and
     // none of them says what "it" is -- the naming lives in the state, so the
     // restatement is on the critical path of this run rather than decoration.
-    tkBeforeFrame(frameP).then(function(en){
+    ready.then(function(en){
       // A newer run may have taken the screen while this one waited. Sending it
       // now would pay for a run nobody is watching.
       if (TK.scale !== st) return;
+      // The run is going out without its English line, and that is a real
+      // degradation rather than a cosmetic one: without it every noul is judging
+      // "support it" against a question that never names it. Say so, instead of
+      // letting a missing line look like a line nobody needed.
+      TK.frameMissed = !en;
       // What this run is actually asking with, snapshotted in the same breath
       // as the body so the banner and the request cannot disagree.
       var rungs = TK.anchorIds ? TK.anchorIds.slice() : null;
