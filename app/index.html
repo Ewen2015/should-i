@@ -534,8 +534,6 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
           <span class="lbl muted">原样丢进来就行，一句话也可以</span>
           <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <button class="btn ghost" id="tk-sound-ask"
-                    title="音效由这一页正在画的数字现算：倒计时按自己的钟，每一百年按那一百年的平均分">音效 · 开</button>
             <button class="btn" id="go-thinkers">Ask&nbsp;Great&nbsp;Thinkers</button>
           </span>
         </div>
@@ -2668,12 +2666,16 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     e.preventDefault();                           /* otherwise a newline lands in the box */
     $("go-thinkers").click();
   };
-  /* One preference, two switches, on purpose. It sits next to the button that
-     starts the sound and next to 重播, which plays it again -- a reader should
-     never have to start the noise in order to find the switch that stops it.
-     Both read the same state, so they cannot disagree. */
+  /* One switch, in the run's own toolbar, next to 重播 -- the sweep and its sound
+     are the same run, so they belong to the same row of controls.
+
+     It used to sit beside the Ask button as well, which put a secondary control
+     next to the one thing on that screen you are meant to press. It does not
+     need to be there: the toolbar is already on screen when the first note
+     plays, so the way to quiet it is visible at the moment it becomes worth
+     wanting, and the choice is remembered. */
   $("q").placeholder = "例如：" + TK_EXAMPLE_Q;
-  var TK_SOUND_BTNS = ["tk-sound-ask", "tk-sound"];
+  var TK_SOUND_BTNS = ["tk-sound"];
   var tkSoundPaint = function(){
     var label = TK_SND.on() ? "音效 · 开" : "音效 · 关";
     TK_SOUND_BTNS.forEach(function(id){
