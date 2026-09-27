@@ -11,10 +11,6 @@ different amounts. `/api/thinkers/plan` and `/api/thinkers/frame` are a local
 read and one short DeepSeek call. `/api/thinkers/scale` is eleven Jev requests
 carrying 5,610 judgements, which is real money -- so it only runs when you ask
 for it with --run.
-
-It talks to 127.0.0.1 only, so it must not go through whatever http_proxy the
-machine has set: a local proxy answers 502 for loopback and it looks like the
-server is down.
 """
 
 from __future__ import annotations
