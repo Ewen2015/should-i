@@ -283,8 +283,8 @@ class Handler(BaseHTTPRequestHandler):
         Choice returns probabilities for 3-6 of them and exactly zero for the
         other ~250, including names like 孔子 and 苏格拉底. Zero cannot be
         rescaled -- no anchor arithmetic turns it back into a position -- so a
-        Choice can rank the top of a batch and nothing else. See the README
-        before "fixing" this into a Choice.
+        Choice can rank the top of a batch and nothing else. See docs/design.md
+        「为什么是 noul，不是 Choice」 before "fixing" this into a Choice.
 
         A noul is a plain judgement that does not compete, and it was measured
         batch-independent: the same frameworks inside two batches whose other 243

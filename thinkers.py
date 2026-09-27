@@ -24,7 +24,7 @@ LOCKED-IN DESIGN (do not undo)
 4. Every question names its person by IDENTIFICATION ONLY -- 中英文名, 生卒年,
    文化圈 -- and says nothing about what that person thought. The one-line
    framework summary that used to ride along was measured to be the thing being
-   measured rather than a reminder; see README 「那一行『框架』是在替谁说话」.
+   measured rather than a reminder; see docs/design.md 「只有身份，没有观点」.
 """
 import urllib.parse
 from collections import Counter, namedtuple
@@ -319,7 +319,7 @@ def _who(t):
     named once rather than with an empty slot.
 
     NO framework sentence here, and that is a measurement rather than a
-    preference -- see the README section 「那一行『框架』是在替谁说话」. The
+    preference -- see docs/design.md 「只有身份，没有观点」. The
     short version: the old wording repeated our one-line summary of each
     person's thought and asked what THAT pointed at, which made the map
     substantially a picture of the roster's own summaries rather than of its minds.
@@ -409,10 +409,11 @@ SCALE_PER_REQUEST = 255
 # way to SHOW that one number means one thing across eleven requests instead of
 # asserting it. They are famous on purpose: a rung nobody can read is not a rung.
 #
-# Measured for this design (see the README): the same 12 asked inside two
-# batches whose other 243 members come from opposite ends of history agreed to
-# r=0.995, max |delta| 0.050; adding them to a batch moved the other 243 by
-# mean 0.008, max 0.030. So they calibrate without disturbing.
+# Measured for this design (see docs/design.md 「尺子上那 12 个人」): the
+# same 12 asked inside two batches whose other 243 members come from opposite
+# ends of history agreed to r=0.995, max |delta| 0.050; adding them to a batch
+# moved the other 243 by mean 0.008, max 0.030. So they calibrate without
+# disturbing.
 ANCHOR_ZH = ("老子", "释迦牟尼", "鲁迅", "马克思", "柏拉图", "孔子",
              "苏格拉底", "达尔文", "刘慈欣", "康德", "亚里士多德", "马斯克")
 

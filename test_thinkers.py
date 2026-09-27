@@ -324,9 +324,10 @@ for t in short:
            "stance %s carries the English circle" % key)
         if t.en:
             ok(t.en in q["instructions"], "stance %s carries the English name" % key)
-        # The framework sentence must NOT come back. It was measured (README
-        # 「那一行『框架』是在替谁说话」): carrying it moved the average person
-        # 0.0555, 9x the noise floor, and turned 24% of the roster across 0.5.
+        # The framework sentence must NOT come back. It was measured (see
+        # docs/design.md 「只有身份，没有观点」): carrying it moved the average
+        # person 0.0555, 9x the noise floor, and turned 24% of the roster
+        # across 0.5.
         ok(not t.frame or t.frame.split("；")[0][:4] not in q["instructions"],
            "stance %s does not smuggle the framework back in" % key)
         ok(q["criteria"]["true"] in (STANCE_FOR, STANCE_AGAINST),

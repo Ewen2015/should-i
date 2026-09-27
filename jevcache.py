@@ -5,9 +5,9 @@
 Why this is safe rather than a shortcut: the endpoint is very nearly a function.
 Re-sending a byte-identical question about 255 thinkers gave r = 0.997, a mean
 difference of 0.0061, zero people moving more than 0.05, and the same 172 of 255
-landing on the "yes" side. That measurement is in the README under
-「能不能只问一遍」. So a hit here does not approximate an answer -- it replays one
-that already happened.
+landing on the "yes" side. That measurement is in docs/design.md under
+「为什么每个人问两遍」. So a hit here does not approximate an answer -- it
+replays one that already happened.
 
 The key is (url, request body). `upstreams._post` serialises the payload once
 with `json.dumps`, so the same dict is the same bytes, and the model name is
