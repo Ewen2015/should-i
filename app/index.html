@@ -534,6 +534,8 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
           <span class="lbl muted">原样丢进来就行，一句话也可以</span>
           <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn ghost" id="tk-sound-ask"
+                    title="音效由这一页正在画的数字现算：倒计时按自己的钟，每一百年按那一百年的平均分">音效 · 开</button>
             <button class="btn" id="go-thinkers">Ask&nbsp;Great&nbsp;Thinkers</button>
           </span>
         </div>
@@ -559,6 +561,8 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap">
       <h1 class="display">Ask&nbsp;Great&nbsp;Thinkers</h1>
       <div style="display:flex;gap:9px">
+        <button class="btn ghost" id="tk-sound"
+                title="音效由这一页正在画的数字现算：倒计时按自己的钟，每一百年按那一百年的平均分">音效 · 开</button>
         <button class="btn ghost" id="tk-rerun" disabled
                 title="用现在这组锚点把同一个问题重问一遍">重跑</button>
         <button class="btn ghost" id="tk-replay" disabled>重播</button>
@@ -895,6 +899,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   // the two finish together and the playhead spends its wait where the wait
   // actually is: at the frontier, with "还在问" on the bar, never mid-century.
   var TK_MS_PER_BIN = 620;
+  TK.sndPos = -1;                 /* which century was last sounded */
   var TK_SCALE_N = 10;
   var TK_SCALE_HI = 0.60;
   var TK_SCALE_LO = 0.40;
@@ -958,6 +963,9 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   }
 
   function tkStop(){
+    // The sound is the animation's second rendering, so it ends exactly where
+    // the animation ends -- replay, back, or a hand on the scrubber.
+    TK_SND.hush();
     TK.timers.forEach(clearTimeout);
     TK.timers = [];
     if (TK.raf) cancelAnimationFrame(TK.raf);
@@ -970,6 +978,163 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     TK.cdown = null;
   }
   function tkLater(fn, ms){ TK.timers.push(setTimeout(fn, ms)); }
+
+  /* ================== 声音 ==================
+     There is no audio file here, and that is the design, not a saving. A file
+     would be a fixed thing asserting a mood; these tones are computed from the
+     numbers the page is already drawing at that instant -- the countdown's own
+     clock, and each century's mean score. So with the sound on you are hearing
+     the same measurement you are looking at, and with it off you are seeing the
+     same thing. The second rendering cannot say anything the first does not.
+
+     The context is built inside the Ask click (TK_SND.warm), because browsers
+     only let audio start from a gesture, and a run has exactly one, at the
+     front. Every entry point is wrapped: a browser that refuses to make sound
+     must still be able to draw the map. */
+  var TK_SOUND_KEY = "should_i.sound";
+  var TK_SND_VOL = 0.5;
+  /* A pentatonic ladder, in semitones. Any two notes drawn from it are
+     consonant, so a century can be sat next to any other century without the
+     pair sounding wrong -- which matters because the order is the roster's, not
+     a composer's. */
+  var TK_PENT = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+  var TK_PENT_BASE = 196;                        /* G3 */
+
+  var TK_SND = (function(){
+    var ctx = null, master = null, dead = false, live = [], on = read();
+
+    function read(){
+      try {
+        var v = localStorage.getItem(TK_SOUND_KEY);
+        if (v === "off") return false;
+        if (v === "on") return true;
+      } catch (e) {}
+      // Nobody has chosen yet. A reader who asked the system for less motion is
+      // not asking to be surprised by sound either: there is no
+      // prefers-reduced-sound to read, and the countdown is the very same three
+      // seconds as the animation it covers.
+      try {
+        return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      } catch (e) { return true; }
+    }
+
+    function store(v){
+      try { localStorage.setItem(TK_SOUND_KEY, v ? "on" : "off"); } catch (e) {}
+    }
+
+    function ensure(){
+      if (dead) return false;
+      if (ctx){
+        try { if (ctx.state === "suspended" && ctx.resume) ctx.resume(); } catch (e) {}
+        return true;
+      }
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC){ dead = true; return false; }
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = TK_SND_VOL;
+        master.connect(ctx.destination);
+        return true;
+      } catch (e) { dead = true; return false; }
+    }
+
+    function voice(when, freq, dur, gain, type){
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, when);
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.linearRampToValueAtTime(gain, when + 0.014);
+      g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+      o.connect(g); g.connect(master);
+      o.onended = function(){
+        var k = live.indexOf(o);
+        if (k >= 0) live.splice(k, 1);
+      };
+      live.push(o);
+      o.start(when);
+      o.stop(when + dur + 0.03);
+    }
+
+    function note(when, freq, dur, gain){
+      voice(when, freq, dur, gain, "sine");
+      voice(when, freq / 2, dur * 1.1, gain * 0.35, "sine");   /* an octave down, for body */
+    }
+
+    function meanOf(dots){
+      var sum = 0, n = 0;
+      dots.forEach(function(t){
+        var v = TK.scored && TK.scored[t.id];
+        if (v === undefined) return;
+        sum += v; n += 1;
+      });
+      return n ? {mean:sum / n, n:n} : null;
+    }
+
+    function safe(fn){
+      return function(){
+        try {
+          if (!on || !ensure()) return;
+          return fn.apply(null, arguments);
+        } catch (e) {}
+      };
+    }
+
+    return {
+      on: function(){ return on; },
+      /* Called from the click, so the context is born inside a gesture. */
+      warm: function(){ try { if (on) ensure(); } catch (e) {} },
+      toggle: function(){
+        on = !on;
+        store(on);
+        if (!on) this.hush(); else this.warm();
+        return on;
+      },
+      hush: function(){
+        live.forEach(function(o){ try { o.stop(); } catch (e) {} });
+        live = [];
+      },
+      digit: safe(function(n){
+        var k = { "3":0, "2":1, "1":2 }[n];
+        if (k === undefined){
+          if (n !== "判") return;
+          // The seal is a fifth, low and longer than a digit: the count is over
+          // and the page is about to stop waiting on itself and start waiting on
+          // Jev, and those two things should not sound the same.
+          var t = ctx.currentTime;
+          voice(t, TK_PENT_BASE / 2, 0.9, 0.20, "triangle");
+          voice(t, (TK_PENT_BASE / 2) * 1.5, 0.9, 0.12, "triangle");
+          return;
+        }
+        // 3-2-1 climbs: the reader is being walked up to the drop, not counted
+        // down into it.
+        note(ctx.currentTime, TK_PENT_BASE * Math.pow(2, TK_PENT[2 + k * 2] / 12), 0.34, 0.15);
+      }),
+      /* One note per century, pitched by that century's mean score and weighted
+         by how many people are in it. A century holding six people should not
+         sound as loud as one holding three hundred. */
+      bin: safe(function(pos){
+        var s = tkSlice(pos), m = meanOf(s.dots);
+        if (!m) return;
+        var idx = Math.max(0, Math.min(TK_PENT.length - 1, Math.round(m.mean * (TK_PENT.length - 1))));
+        var f = TK_PENT_BASE * Math.pow(2, TK_PENT[idx] / 12);
+        var g = 0.05 + 0.07 * Math.min(1, Math.sqrt(m.n / 300));
+        note(ctx.currentTime, f, 0.46, g);
+      }),
+      /* Every century has landed: the whole answer, as one chord, on the root the
+         overall mean asks for. */
+      verdict: safe(function(){
+        var m = meanOf((TK.plan && TK.plan.dots) || []);
+        if (!m) return;
+        var idx = Math.max(0, Math.min(TK_PENT.length - 1, Math.round(m.mean * (TK_PENT.length - 1))));
+        var f = TK_PENT_BASE * Math.pow(2, TK_PENT[idx] / 12);
+        var t = ctx.currentTime;
+        [1, 1.5, 2].forEach(function(mult, i){
+          voice(t + i * 0.07, f * mult, 2.4 - i * 0.3, 0.09, "sine");
+        });
+      })
+    };
+  })();
 
 
   function tkReset(){
@@ -1186,6 +1351,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       num.classList.remove("tk-punch");
       void num.offsetWidth;
       num.classList.add("tk-punch");
+      TK_SND.digit(n);
     };
 
     var tick = function(now){
@@ -1503,6 +1669,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     TK.playing = true;
     TK.done = false;
     TK.pos = 0;
+    TK.sndPos = -1;
     $("tk-replay").disabled = true;
     $("tk-range").disabled = true;
     $("tk-out").classList.remove("hidden");
@@ -1516,6 +1683,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       tkShow(TK.pos, null);
       tkScalePanel();
       tkScaleMaybe();
+      TK_SND.verdict();
     };
     var tick = function(now){
       if (!TK.playing) return;
@@ -1528,6 +1696,10 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       TK.pos = pos;
       if (pos >= TK.bins.length){ finish(); return; }
       if (pos < canReach){
+        // Bins are sounded here, not in tkShow: tkShow runs sixty times a second
+        // and would turn the roster into a machine gun. If the sweep catches up
+        // in a burst, only the century it lands on is heard.
+        if (pos !== TK.sndPos){ TK.sndPos = pos; TK_SND.bin(pos); }
         var bin = TK.bins[pos];
         tkShow(pos, Math.round(bin.lo + (bin.hi - bin.lo) * Math.min(frac, 1)));
       } else {
@@ -1551,6 +1723,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
       b.classList.remove("hidden");
       return;
     }
+    TK_SND.warm();
     show("thinkers");
     tkRun(q);
   }
@@ -2483,6 +2656,23 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     e.preventDefault();                           /* otherwise a newline lands in the box */
     $("go-thinkers").click();
   };
+  /* One preference, two switches, on purpose. It sits next to the button that
+     starts the sound and next to 重播, which plays it again -- a reader should
+     never have to start the noise in order to find the switch that stops it.
+     Both read the same state, so they cannot disagree. */
+  var TK_SOUND_BTNS = ["tk-sound-ask", "tk-sound"];
+  var tkSoundPaint = function(){
+    var label = TK_SND.on() ? "音效 · 开" : "音效 · 关";
+    TK_SOUND_BTNS.forEach(function(id){
+      var el = $(id);
+      if (el) el.textContent = label;
+    });
+  };
+  TK_SOUND_BTNS.forEach(function(id){
+    var el = $(id);
+    if (el) el.onclick = function(){ TK_SND.toggle(); tkSoundPaint(); };
+  });
+  tkSoundPaint();
   $("go-thinkers").onclick = tkStart;
   $("tk-back").onclick = function(){
     tkAbortScale(); tkStop(); TK.playing = false; show("ask");
