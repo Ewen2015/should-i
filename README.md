@@ -123,7 +123,7 @@ python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？" --
 | [docs/interface.md](docs/interface.md) | 页面：地图、时间轴、面板、视觉语言 |
 | [docs/roster.md](docs/roster.md) | 名录：2578 人、13 个文化圈、来源与偏向 |
 | [docs/limitations.md](docs/limitations.md) | 已知的取舍，以及这一页最该被质疑的地方 |
-| [docs/slides.html](docs/slides.html) | 路演用的四页幻灯：一个 HTML，← → 翻页，也能直接打印成 PDF |
+| [docs/slides.html](docs/slides.html) | 路演用的六页幻灯：一个 HTML，← → 翻页，也能直接打印成 PDF |
 
 ## 已知限制
 
