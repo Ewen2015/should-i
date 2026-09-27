@@ -212,11 +212,68 @@ textarea::placeholder{color:rgba(30,30,30,.38)}
 .tk-hud .yr{font-size:clamp(15px,2.4vw,24px);letter-spacing:.02em;color:var(--paper)}
 .tk-hud .yr b{color:var(--pink)}
 .tk-hud .rt{text-align:right}
-.tk-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(20,20,20,.9);color:var(--paper);z-index:6;
-  font:700 clamp(52px,12vw,132px)/1 var(--mono);letter-spacing:.02em}
-.tk-count small{font:400 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;
-  display:block;margin-top:14px;color:var(--pink);text-align:center}
+/* The countdown is a measuring instrument, because that is what the rest of the
+   product is. The digit is split into the two signal colours the page already
+   uses -- pink for support, cyan for against -- and snaps back together; the
+   ruler under it fills on the same clock the digits advance on, so the count and
+   the bar cannot disagree about how much of the three seconds is left. */
+.tk-count{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:rgba(20,20,20,.92);color:var(--paper);z-index:6;
+  transition:opacity .18s ease-out}
+.tk-count.tk-lift{opacity:0}
+.tk-cnum{position:relative;font:700 clamp(56px,14vw,168px)/1 var(--mono);
+  letter-spacing:.02em;color:var(--paper);transform-origin:50% 50%;
+  will-change:transform,filter,opacity;isolation:isolate}
+/* The ghosts read the digit off the element itself, so they cannot drift out of
+   step with it: there is one number in the DOM and this is it. They end at
+   opacity 0 rather than at zero offset, because a ghost parked exactly on the
+   digit would tint it.
+
+   screen, not normal: screened against the white digit a ghost is still white,
+   so the digit stays white and only the part of the ghost that has slid out past
+   it shows colour. That is the whole effect -- a fringe, not a colour wash. With
+   normal blending the cyan simply covers the digit for the first 200ms. */
+.tk-cnum::before,.tk-cnum::after{content:attr(data-n);position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;
+  opacity:0;mix-blend-mode:screen}
+.tk-cnum::before{color:var(--pink)}
+.tk-cnum::after{color:#8ce8f0}
+.tk-cnum.tk-punch{animation:tkPunch .42s cubic-bezier(.16,.9,.3,1) both}
+.tk-cnum.tk-punch::before{animation:tkGhost .42s ease-out both,
+  tkSplitL .42s cubic-bezier(.16,.9,.3,1) both}
+.tk-cnum.tk-punch::after{animation:tkGhost .42s ease-out both,
+  tkSplitR .42s cubic-bezier(.16,.9,.3,1) both}
+@keyframes tkPunch{
+  0%{opacity:0;transform:scale(1.42);filter:blur(14px)}
+  40%{opacity:1;filter:blur(0)}
+  64%{transform:scale(.982)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes tkGhost{0%{opacity:1}60%{opacity:.5}100%{opacity:0}}
+@keyframes tkSplitL{0%{transform:translateX(-18px) scale(1.03)}
+  100%{transform:translateX(-3px) scale(1)}}
+@keyframes tkSplitR{0%{transform:translateX(18px) scale(1.03)}
+  100%{transform:translateX(3px) scale(1)}}
+.tk-clbl{font:400 12px/1 var(--mono);letter-spacing:.18em;margin-top:18px;
+  color:var(--pink);text-align:center}
+.tk-cbar{position:relative;width:min(440px,62%);height:10px;margin-top:22px;
+  border:1px solid rgba(254,254,254,.22);background:rgba(254,254,254,.10)}
+.tk-cbar i{position:absolute;inset:0;transform-origin:0 50%;transform:scaleX(0);
+  background:var(--pink)}
+/* The ticks sit on top of the fill, so it reads as a ruler being filled rather
+   than as a plain progress bar that happens to be divided. */
+.tk-cbar::after{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,rgba(20,20,20,.6) 0 1px,transparent 1px calc(100%/30))}
+/* Past three seconds the bar is full and the wait has changed kind: the count is
+   over and something else is being waited on. It says so by moving. */
+.tk-count.tk-holding .tk-cbar{animation:tkWait 1.5s ease-in-out infinite}
+@keyframes tkWait{0%,100%{opacity:1}50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){
+  .tk-cnum.tk-punch,.tk-cnum.tk-punch::before,.tk-cnum.tk-punch::after{animation:none}
+  .tk-cnum.tk-punch::before,.tk-cnum.tk-punch::after{opacity:0}
+  .tk-count.tk-holding .tk-cbar{animation:none}
+}
 /* One row per culture: the same three colours as the big bar above, so the two
    read as one measure. Counts of people, not shares of a batch -- a person is
    one person, and nothing here sums to 100% across cultures. */
@@ -512,7 +569,11 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
             <span class="yr" id="tk-year">—</span>
             <span class="rt" id="tk-frame-label">—</span>
           </div>
-          <div class="tk-count hidden" id="tk-count">3</div>
+          <div class="tk-count hidden" id="tk-count">
+            <div class="tk-cnum" id="tk-cnum" data-n="3">3</div>
+            <div class="tk-clbl" id="tk-clbl">全世界的思想者，一起判这一件事</div>
+            <div class="tk-cbar"><i id="tk-cfill"></i></div>
+          </div>
         </div>
         <div class="tk-scrub">
           <input type="range" id="tk-range" min="0" max="0" value="0" step="1" disabled
@@ -794,7 +855,8 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     scale:{scores:null, answered:0, roster:0, usage:null, error:null,
            done:false, ctl:null, calibration:null, repeats:0, measurements:0,
            reused:0, saved:null},
-    planReady:false, countdownDone:false, frameMissed:false
+    planReady:false, countdownDone:false, frameMissed:false,
+    cdown:null, craf:0, cgen:0
   };
   // How long one century holds the screen when the data is already there. The
   // data is 19s for the whole roster and this is ~20s for the whole sweep, so
@@ -868,6 +930,12 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
     TK.timers = [];
     if (TK.raf) cancelAnimationFrame(TK.raf);
     TK.raf = 0;
+    // The countdown has a clock of its own, and a run that is replaced while it
+    // is still counting must not leave that clock running: it would finish
+    // underneath the next run and hide its overlay.
+    if (TK.craf) cancelAnimationFrame(TK.craf);
+    TK.craf = 0;
+    TK.cdown = null;
   }
   function tkLater(fn, ms){ TK.timers.push(setTimeout(fn, ms)); }
 
@@ -1029,54 +1097,107 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   /* The countdown is the only thing on screen while a run is being set up, so it
      is also the only cover that setup gets.
 
-     It lifts on two conditions, not one: the "3 2 1" has been read, and the run
-     is ready to ask. The second is why it takes a promise. The last beat used to
-     run out on a fixed 520ms timer whatever was happening behind it, and what
-     happens behind it is the restatement call, which is bimodal -- 1.03s on a
-     fresh question and 7.12s on the same one cold, against a countdown that ends
-     at 2.47s either way. So the slow half landed under an empty page: 2.54s
-     measured between the countdown disappearing and the first Jev request
-     leaving, with nothing on screen in between.
+     A real three seconds: "3", "2", "1", one second each, off one clock -- the
+     same clock that fills the ruler under them, so the digits and the bar cannot
+     disagree about how much of the three seconds is left. It used to be three
+     setTimeout beats of 640ms, which is not a three-second countdown: "3" was on
+     screen for 640ms and the whole thing was over in 1.92s. Reported as
+     "有点快，不是真实的 3 秒", and that is exactly what it was.
 
-     Past TK_HOLD_QUIET the beat counts the seconds out loud. A held beat with no
+     It lifts on two conditions, not one: the three seconds have been read, and
+     the run is ready to ask. The second is why it takes a promise. What is being
+     waited on is the restatement call, which is bimodal -- 1.03s on a fresh
+     question and 7.12s on the same one cold. So a slow run used to spend the
+     difference under an empty page: 2.54s measured between the countdown
+     disappearing and the first Jev request leaving.
+
+     Past TK_HOLD_QUIET the seal counts the seconds out loud. A held beat with no
      clock on it is the same freeze with a longer name. */
   function tkCountdown(held, done){
-    var el = $("tk-count");
-    var seq = ["3","2","1"];
-    var i = 0, armed = false, ready = false, gone = false, holding = false;
+    var el = $("tk-count"), num = $("tk-cnum"), lbl = $("tk-clbl"), fill = $("tk-cfill");
+    var digits = ["3","2","1"];
+    var owner = {};
+    // Which countdown owns this overlay. Only tkCountdown bumps it, so a
+    // replacement invalidates the old one's cleanup while tkStop -- which
+    // tkPlay calls a few lines after this one finishes -- cannot.
+    var gen = ++TK.cgen;
+    var t0 = 0, shown = "", gone = false, armed = false, ready = false;
+    TK.cdown = owner;
+
     var lift = function(){
-      if (gone || !armed || !ready) return;
-      gone = true; holding = false;
-      el.classList.add("hidden");
+      if (gone || TK.cdown !== owner || !armed || !ready) return;
+      gone = true;
+      if (TK.craf) cancelAnimationFrame(TK.craf);
+      TK.craf = 0;
+      // Dissolve rather than cut: the first dots land a few hundred ms later,
+      // and they should come up through the countdown instead of after it.
+      //
+      // This timer is deliberately not a tkLater, and deliberately keyed on the
+      // generation rather than on TK.cdown: done() starts the run, the run calls
+      // tkStop(), and tkStop would clear a tkLater here -- leaving an invisible
+      // overlay parked over the map with nothing left to remove it.
+      el.classList.add("tk-lift");
+      setTimeout(function(){
+        if (TK.cgen === gen) el.classList.add("hidden");
+      }, TK_LIFT_MS);
       done();
     };
-    el.classList.remove("hidden");
-    el.innerHTML = seq[0] + "<small>全世界的思想者，一起判这一件事</small>";
-    var step = function(){
-      i += 1;
-      if (i < seq.length){
-        el.innerHTML = seq[i] + "<small>全世界的思想者，一起判这一件事</small>";
-        tkLater(step, 640);
+
+    var setDigit = function(n){
+      if (n === shown) return;
+      shown = n;
+      num.textContent = n;
+      num.setAttribute("data-n", n);
+      // Restarting a CSS animation needs the class off for a frame: removing and
+      // re-adding it in the same tick is coalesced into no change at all, and the
+      // second "3" of a re-run would arrive with no animation.
+      num.classList.remove("tk-punch");
+      void num.offsetWidth;
+      num.classList.add("tk-punch");
+    };
+
+    var tick = function(now){
+      if (gone || TK.cdown !== owner) return;
+      if (!t0) t0 = now;
+      var s = (now - t0) / 1000;
+      if (s < TK_COUNT_SECS){
+        setDigit(digits[Math.min(Math.floor(s), digits.length - 1)]);
+        fill.style.transform = "scaleX(" + (s / TK_COUNT_SECS).toFixed(4) + ")";
+        TK.craf = requestAnimationFrame(tick);
         return;
       }
-      holding = true;
-      var t0 = Date.now();
-      var paint = function(){
-        var s = (Date.now() - t0) / 1000;
-        var sub = s < TK_HOLD_QUIET ? "正在问 Jev"
-                                    : "正在核对题干 · 已等 " + Math.round(s) + " 秒";
-        el.innerHTML = "<div style='text-align:center'>判<small>" + sub + "</small></div>";
-        if (holding) tkLater(paint, 250);
+      // The three seconds are up. The rewrite may still be in flight, so the
+      // seal goes up and stays up until the run can actually ask.
+      TK.craf = 0;
+      fill.style.transform = "scaleX(1)";
+      setDigit("判");
+      el.classList.add("tk-holding");
+      var h0 = now;
+      var beat = function(){
+        if (gone || TK.cdown !== owner) return;
+        var h = (performance.now() - h0) / 1000;
+        lbl.textContent = h < TK_HOLD_QUIET
+          ? "正在问 Jev"
+          : "正在核对题干 · 已等 " + Math.round(h) + " 秒";
+        tkLater(beat, 250);
       };
-      paint();
-      // 3-2-1 is what says a run began, so it is read even by a run that was
-      // ready before the countdown started.
-      tkLater(function(){ armed = true; lift(); }, 520);
+      lbl.textContent = "正在问 Jev";
+      beat();
+      // The seal is read like a digit: a count that ends on a character nobody
+      // saw is a count that was one beat too short.
+      tkLater(function(){ armed = true; lift(); }, TK_SEAL_MS);
       if (held && held.then) held.then(function(){ ready = true; lift(); },
                                        function(){ ready = true; lift(); });
       else ready = true;
     };
-    tkLater(step, 640);
+
+    el.classList.remove("hidden");
+    el.classList.remove("tk-lift");
+    el.classList.remove("tk-holding");
+    lbl.textContent = TK_COUNT_LABEL;
+    fill.style.transform = "scaleX(0)";
+    setDigit("3");
+    TK.craf = requestAnimationFrame(tick);
   }
 
   function tkCircleLabel(id){
@@ -1416,7 +1537,7 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
      "One short call" was read as "a fast call" for as long as nobody measured
      it, and the two are not the same. Measured on this machine: 0.006s off the
      cache, 1.03s on a fresh question, and 7.12s on that same fresh question
-     when the model is cold. The countdown is 2.47s long. So the fast half of
+     when the model is cold. The countdown is 3.52s long. So the fast half of
      that split hides inside the animation and the slow half does not -- which
      is the freeze tkCountdown now covers.
 
@@ -1759,10 +1880,22 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
   var TK_SCALE_HI = 0.60;   // >= this and the framework points at "do it"
   var TK_SCALE_LO = 0.40;   // <  this and it points at "don't"
 
-  // How long the countdown's last beat holds before it starts counting seconds.
-  // The beat is 520ms when nothing is wrong and the whole countdown is 2.47s,
-  // so two seconds keeps the clock off every ordinary run and puts it on the
-  // one the reader is actually stuck in.
+  // The countdown, in the units the page actually shows. Three digits, one
+  // second each: the numbers are Chinese and the reader counts in seconds, so
+  // "3 2 1" has to take three of them. It shipped at 640ms a digit, which is
+  // 1.92s of counting under a label that says three.
+  var TK_COUNT_SECS = 3;
+  var TK_COUNT_LABEL = "全世界的思想者，一起判这一件事";
+  // How long "判" is held before the overlay may lift, and how long the dissolve
+  // takes. The seal is the last thing read, so it is read for about as long as a
+  // digit was.
+  var TK_SEAL_MS = 520;
+  var TK_LIFT_MS = 180;
+
+  // How long the seal holds before it starts counting seconds out loud. The
+  // count is over by then and the wait has changed kind, so two seconds keeps
+  // the clock off every ordinary run and puts it on the one the reader is
+  // actually stuck in.
   var TK_HOLD_QUIET = 2.0;
 
   function tkAbortScale(){
