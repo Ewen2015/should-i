@@ -173,7 +173,7 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
       <h2 class="display h1">让全人类的思想家回答你</h2>
       <div class="sub muted">
         <b class="hi">对自身处境的过分关注</b>，以及<b class="lo">对宇宙的无知</b>，是大部分人陷入痛苦的来源。
-        互联网答应过把知识给人，然后是信息茧房；大模型答应过回答一切，然后把提问权留给了你。
+        互联网答应过把知识给人，然后是信息茧房；大模型答应过回答一切，可回答你的人只有一个。
       </div>
 
       <div class="cols">
@@ -195,15 +195,15 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
             <svg id="d-spread" viewBox="0 0 520 250" width="100%" height="250" role="img"
                  aria-label="一个问题铺开成一条 0 到 1 的分布"></svg>
             <div class="cap muted" style="margin-top:7px">
-              回答不需要框架。问题从别处来，每个人只给出自己的位置——
-              把提问权从个人手里拿走，<b>回路就断了</b>。
+              问题还是你的，回答问题的人却不由你挑——
+              想过它的人一个接一个站到你面前，<b>回路就断了</b>。
             </div>
           </div>
         </div>
       </div>
 
       <div class="punch">
-        <span class="t">提问需要框架，回答不需要。</span>
+        <span class="t">让想过它的人，站到你面前。</span>
         <span class="s">一次提问 → 2578 个位置</span>
       </div>
     </div>
@@ -364,7 +364,7 @@ body.blank .deck,body.blank .hud{opacity:0;pointer-events:none}
   /* the histogram, in the same three colours the product uses for a 三色条 */
   var bw = (X1-X0)/BINS, counts = [], max = 1;
   for(var b=0;b<BINS;b++) counts[b] = 0;
-  p.push('<text x="40" y="40" font-family="ui-monospace,monospace" font-size="10.5" fill="rgba(30,30,30,.62)">问题从别处来</text>');
+  p.push('<text x="40" y="40" font-family="ui-monospace,monospace" font-size="10.5" fill="rgba(30,30,30,.62)">想过它的人，一个一个站过来</text>');
 
   vals.forEach(function(v){ counts[Math.min(BINS-1, Math.floor(v*BINS))]++; });
   counts.forEach(function(c){ if(c>max) max = c; });
