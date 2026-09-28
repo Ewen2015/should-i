@@ -990,7 +990,16 @@ footer{font:10.5px/1.8 var(--mono);letter-spacing:.08em;text-transform:uppercase
      front. Every entry point is wrapped: a browser that refuses to make sound
      must still be able to draw the map. */
   var TK_SOUND_KEY = "should_i.sound";
-  var TK_SND_VOL = 0.5;
+  /* Unity, and it used to be 0.5. Nothing below this line changed to get
+     louder: the per-voice gains already carry the balance, so the master was
+     only ever subtracting, and it was subtracting from a mix that never came
+     close to the ceiling. Replayed from a real run's node graph, the loudest
+     sample in the whole animation -- the 判决 seal, two triangles at 98 and
+     147 Hz -- sat at -18.0 dBFS and would have needed a master of 3.97 to
+     clip. At 1.0 that sample lands at -12.0 dBFS and the sweep's RMS goes from
+     -41.5 to -35.5 dBFS: exactly twice as loud, +6.0 dB, with 4x of headroom
+     still unspent. */
+  var TK_SND_VOL = 1.0;
   /* A pentatonic ladder, in semitones. Any two notes drawn from it are
      consonant, so a century can be sat next to any other century without the
      pair sounding wrong -- which matters because the order is the roster's, not
