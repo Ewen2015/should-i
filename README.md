@@ -134,7 +134,7 @@ python3 scripts/smoke_test.py "如果有机会，我要去火星移民吗？" --
 | [docs/roster.md](docs/roster.md) | 名录：2578 人、13 个文化圈、来源与偏向 |
 | [docs/limitations.md](docs/limitations.md) | 已知的取舍，以及这一页最该被质疑的地方 |
 | [docs/slides.html](docs/slides.html) | 路演用的七页幻灯：一个 HTML，← → 翻页，也能直接打印成 PDF |
-| [docs/wechat.md](docs/wechat.md) | 公众号用的产品介绍：一次真实运行，文字配五张截图 |
+| [docs/wechat.md](docs/wechat.md) | 公众号用的产品介绍：一次真实运行，文字配四张截图 |
 
 ## 已知限制
 
