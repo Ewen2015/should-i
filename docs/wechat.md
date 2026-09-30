@@ -1,5 +1,9 @@
 # Ask Great Thinkers: 把你的好奇心，让历史上所有思想家回答
 
+![Builder: Ewen Wang](wechat/cover.jpg)
+
+Builder: Ewen Wang
+
 > "我写那些艰难的事情，因为我想知道自己并不孤独，也想让你知道，你也并不孤独。"
 >
 > —— 美国作家 Brian Doyle
